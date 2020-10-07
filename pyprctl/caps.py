@@ -228,7 +228,7 @@ class CapState:
                 and self.inheritable == other.inheritable
             )
 
-        return NotImplemented
+        return NotImplemented  # pytype: disable=bad-return-type
 
     def __repr__(self) -> str:
         return "{}(effective={!r}, permitted={!r}, inheritable={!r})".format(
