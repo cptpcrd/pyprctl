@@ -2,8 +2,9 @@ import ctypes
 import dataclasses
 import enum
 import errno
+import re
 import warnings
-from typing import Callable, Iterable, Optional, Set, Tuple, cast
+from typing import Callable, Iterable, List, Optional, Set, Tuple, cast
 
 from . import ffi
 
@@ -76,8 +77,29 @@ class Cap(enum.Enum):
     # Note: When adding capabilities to this list, make sure to add type annotations to the
     # _CapabilitySet class below.
 
+    def _to_name(self) -> str:
+        return "cap_" + self.name.lower()  # pylint: disable=no-member
+
+    @classmethod
+    def from_name(cls, name: str) -> "Cap":
+        """Look up a capability by name.
+
+        Roughly equivalent to cap_from_name() in libcap.
+        Names should be in the format "cap_chown", NOT "CAP_CHOWN"/"CHOWN"/"chown".
+
+        """
+
+        if name.islower() and name.startswith("cap_"):
+            try:
+                return cast(Cap, getattr(cls, name[4:].upper()))
+            except AttributeError:
+                pass
+
+        raise ValueError("Unknown capability {!r}".format(name))
+
 
 _LAST_CAP = max(Cap, key=lambda cap: cap.value)
+_ALL_CAPS_SET = set(Cap)
 
 
 class _CapabilitySet:
@@ -265,6 +287,16 @@ class CapState:
         if ffi.libc.capset(ctypes.byref(header), data) < 0:
             raise ffi.build_oserror(ctypes.get_errno())
 
+    @classmethod
+    def from_text(cls, text: str) -> "CapState":
+        effective, inheritable, permitted = _capstate_from_text(text)
+        return cls(effective=effective, inheritable=inheritable, permitted=permitted)
+
+    def __str__(self) -> str:
+        return _capstate_to_text(
+            effective=self.effective, inheritable=self.inheritable, permitted=self.permitted
+        )
+
 
 def _capset_from_bitmask(bitmask: int) -> Set[Cap]:
     res = set()
@@ -301,6 +333,199 @@ def _split_bitmask_32(bitmask: int) -> Tuple[int, int]:
 
 def _combine_bitmask_32(upper: int, lower: int) -> int:
     return (upper << 32) | lower
+
+
+def _capstate_from_text(text: str) -> Tuple[Set[Cap], Set[Cap], Set[Cap]]:
+    # Returns (effective, inheritable, permitted)
+
+    effective: Set[Cap] = set()
+    inheritable: Set[Cap] = set()
+    permitted: Set[Cap] = set()
+
+    for clause in text.split():
+        if not any(ch in clause for ch in "=+-"):
+            raise ValueError("Invalid capability set clause")
+
+        cap_names, action_spec = re.split(r"(?=[-+=])", clause, maxsplit=1)
+
+        caps = (
+            list(Cap)
+            if cap_names in ("", "all")
+            else [Cap.from_name(name) for name in cap_names.split(",")]
+        )
+
+        should_raise = True
+
+        last_ch = None
+
+        for ch in action_spec:
+            if ch in "+-=":
+                if last_ch is not None and last_ch not in "eip":
+                    raise ValueError("Repeated flag characters in capability set clause")
+
+            if ch == "=":
+                # Drop the listed capabilities in all sets
+                effective.difference_update(caps)
+                inheritable.difference_update(caps)
+                permitted.difference_update(caps)
+                # Now only raise it in the specified sets
+                should_raise = True
+
+            elif ch == "+":
+                should_raise = True
+
+            elif ch == "-":
+                should_raise = False
+
+            elif ch == "e":
+                if should_raise:
+                    effective.update(caps)
+                else:
+                    effective.difference_update(caps)
+
+            elif ch == "i":
+                if should_raise:
+                    inheritable.update(caps)
+                else:
+                    inheritable.difference_update(caps)
+
+            elif ch == "p":
+                if should_raise:
+                    permitted.update(caps)
+                else:
+                    permitted.difference_update(caps)
+
+            else:
+                raise ValueError("Invalid character {!r} in capability set clause".format(ch))
+
+            last_ch = ch
+
+    return effective, inheritable, permitted
+
+
+def _capstate_to_text(*, effective: Set[Cap], inheritable: Set[Cap], permitted: Set[Cap]) -> str:
+    if not effective and not inheritable and not permitted:
+        return "="
+
+    def cap_set_to_text(caps: Set[Cap]) -> str:
+        if caps == _ALL_CAPS_SET:
+            return ""
+
+        return ",".join(
+            cap._to_name()  # pylint: disable=protected-access
+            for cap in sorted(caps, key=lambda cap: cap.value)
+        )
+
+    # These are the capabilities that need to be added.
+    effective = set(effective)
+    inheritable = set(inheritable)
+    permitted = set(permitted)
+
+    # These are the capabilities that need to be dropped (perhaps because we batch-added "extra"
+    # capabilities, for example as in "=e cap_chown-e").
+    drop_effective: Set[Cap] = set()
+    drop_inheritable: Set[Cap] = set()
+    drop_permitted: Set[Cap] = set()
+
+    parts: List[str] = []
+
+    def add_part(
+        caps: Set[Cap],
+        *,
+        eff: bool = False,
+        inh: bool = False,
+        perm: bool = False,
+        drop: bool = False
+    ) -> None:
+        if not caps:
+            # Nothing to do!
+            return
+
+        # If we're pretty close to a full set, just use a full set.
+        if not drop and caps != _ALL_CAPS_SET and len(_ALL_CAPS_SET - caps) <= 10:
+            caps = _ALL_CAPS_SET
+
+        if drop:
+            prefix_ch = "-"
+        elif not parts:
+            # No previous values that the resetting behavior of "=" might mess up
+            prefix_ch = "="
+        else:
+            prefix_ch = "+"
+
+        parts.append(
+            cap_set_to_text(caps)
+            + prefix_ch
+            + ("e" if eff else "")
+            + ("i" if inh else "")
+            + ("p" if perm else "")
+        )
+
+        if drop:
+            # We just dropped these capabilities; we don't need to keep track of them any more
+            if eff:
+                drop_effective.difference_update(caps)
+            if inh:
+                drop_inheritable.difference_update(caps)
+            if perm:
+                drop_permitted.difference_update(caps)
+
+        else:
+            if eff:
+                # If there were any capabilities in "caps" that aren't in "effective",
+                # then those were extraneous and we need to remove them later.
+                drop_effective.update(caps - effective)
+                # All of the capabilities in "caps" have been added; we don't need to
+                # keep track of them in "effective" any more.
+                effective.difference_update(caps)
+            if inh:
+                drop_inheritable.update(caps - inheritable)
+                inheritable.difference_update(caps)
+            if perm:
+                drop_permitted.update(caps - permitted)
+                permitted.difference_update(caps)
+
+    # First, add the ones that are common to all 3 sets.
+    add_part(effective & inheritable & permitted, eff=True, inh=True, perm=True)
+
+    # If we "overshot" by adding too many capabilities (for example, if all three sets had every
+    # capability except CAP_CHOWN), then we need to drop the "extra" ones -- at least, the "extras"
+    # that are common to all 3 sets.
+    add_part(
+        drop_effective & drop_inheritable & drop_permitted, eff=True, inh=True, perm=True, drop=True
+    )
+
+    # Now, go through and add the various combinations (cap_chown+ei, cap_chown+ep, etc.).
+    add_part(effective & inheritable, eff=True, inh=True)
+    add_part(effective & permitted, eff=True, perm=True)
+    add_part(inheritable & permitted, inh=True, perm=True)
+
+    # Again remove any "extras" that are common to 2 sets.
+    add_part(drop_effective & drop_inheritable, eff=True, inh=True, drop=True)
+    add_part(drop_effective & drop_permitted, eff=True, perm=True, drop=True)
+    add_part(drop_inheritable & drop_permitted, inh=True, perm=True, drop=True)
+
+    # Now add the remaining ones that are set-specific.
+    add_part(effective, eff=True)
+    add_part(inheritable, inh=True)
+    add_part(permitted, perm=True)
+
+    # Nothing should be left to add
+    assert not effective
+    assert not inheritable
+    assert not permitted
+
+    # Finally, drop the ones that are set-specific.
+    add_part(drop_effective, eff=True, drop=True)
+    add_part(drop_inheritable, inh=True, drop=True)
+    add_part(drop_permitted, perm=True, drop=True)
+
+    # And now nothing should be left to remove
+    assert not drop_effective
+    assert not drop_inheritable
+    assert not drop_permitted
+
+    return " ".join(parts)
 
 
 @enum.unique

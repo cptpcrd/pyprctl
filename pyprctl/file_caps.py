@@ -4,7 +4,13 @@ import struct
 from typing import Optional, Set, Union
 
 from . import ffi
-from .caps import Cap, _capset_from_bitmask, _capset_to_bitmask, _capstate_from_text
+from .caps import (
+    Cap,
+    _capset_from_bitmask,
+    _capset_to_bitmask,
+    _capstate_from_text,
+    _capstate_to_text,
+)
 
 
 @dataclasses.dataclass
@@ -85,3 +91,24 @@ class FileCaps:
         follow_symlinks: bool = True,
     ) -> None:
         os.removexattr(path, ffi.XATTR_NAME_CAPS, follow_symlinks=follow_symlinks)
+
+    @classmethod
+    def from_text(cls, text: str) -> "FileCaps":
+        effective, inheritable, permitted = _capstate_from_text(text)
+
+        if effective and effective != permitted:
+            raise ValueError(
+                "Cannot construct FileCaps with non-empty effective set that is not equal to "
+                "permitted set"
+            )
+
+        return cls(
+            effective=bool(effective), inheritable=inheritable, permitted=permitted, rootid=None
+        )
+
+    def __str__(self) -> str:
+        return _capstate_to_text(
+            effective=(self.permitted if self.effective else set()),
+            inheritable=self.inheritable,
+            permitted=self.permitted,
+        )
