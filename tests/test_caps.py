@@ -36,8 +36,6 @@ def test_bset_probe() -> None:
 
 
 def test_capstate() -> None:
-    assert pyprctl.CapState() == pyprctl.CapState()
-
     capstate = pyprctl.CapState.get_current()
 
     # This should match

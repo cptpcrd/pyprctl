@@ -1,8 +1,9 @@
 import ctypes
+import dataclasses
 import enum
 import errno
 import warnings
-from typing import Any, Callable, Iterable, Optional, Set, Tuple, cast
+from typing import Callable, Iterable, Optional, Set, Tuple, cast
 
 from . import ffi
 
@@ -215,11 +216,11 @@ cap_effective = _CapabilitySet("effective")
 cap_ambient = _CapabilitySet("ambient")
 
 
+@dataclasses.dataclass
 class CapState:
-    def __init__(self) -> None:
-        self.effective: Set[Cap] = set()
-        self.permitted: Set[Cap] = set()
-        self.inheritable: Set[Cap] = set()
+    effective: Set[Cap]
+    permitted: Set[Cap]
+    inheritable: Set[Cap]
 
     @classmethod
     def get_current(cls) -> "CapState":
@@ -235,15 +236,16 @@ class CapState:
         if ffi.libc.capget(ctypes.byref(header), data) < 0:
             raise ffi.build_oserror(ctypes.get_errno())
 
-        res = cls()
-        res.effective = _capset_from_bitmask(
-            _combine_bitmask_32(data[1].effective, data[0].effective)
-        )
-        res.permitted = _capset_from_bitmask(
-            _combine_bitmask_32(data[1].permitted, data[0].permitted)
-        )
-        res.inheritable = _capset_from_bitmask(
-            _combine_bitmask_32(data[1].inheritable, data[0].inheritable)
+        res = cls(
+            effective=_capset_from_bitmask(
+                _combine_bitmask_32(data[1].effective, data[0].effective)
+            ),
+            permitted=_capset_from_bitmask(
+                _combine_bitmask_32(data[1].permitted, data[0].permitted)
+            ),
+            inheritable=_capset_from_bitmask(
+                _combine_bitmask_32(data[1].inheritable, data[0].inheritable)
+            ),
         )
 
         return res
@@ -262,21 +264,6 @@ class CapState:
 
         if ffi.libc.capset(ctypes.byref(header), data) < 0:
             raise ffi.build_oserror(ctypes.get_errno())
-
-    def __eq__(self, other: Any) -> bool:
-        if isinstance(other, CapState):
-            return (
-                self.effective == other.effective
-                and self.permitted == other.permitted
-                and self.inheritable == other.inheritable
-            )
-
-        return NotImplemented  # pytype: disable=bad-return-type
-
-    def __repr__(self) -> str:
-        return "{}(effective={!r}, permitted={!r}, inheritable={!r})".format(
-            self.__class__.__name__, self.effective, self.permitted, self.inheritable
-        )
 
 
 def _capset_from_bitmask(bitmask: int) -> Set[Cap]:
