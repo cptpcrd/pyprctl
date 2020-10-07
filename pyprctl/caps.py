@@ -29,7 +29,7 @@ ffi.libc.capset.restype = ctypes.c_int
 
 
 @enum.unique
-class Cap(enum.IntEnum):
+class Cap(enum.Enum):
     CHOWN = 0
     DAC_OVERRIDE = 1
     DAC_READ_SEARCH = 2
@@ -76,7 +76,7 @@ class Cap(enum.IntEnum):
     # _CapabilitySet class below.
 
 
-_LAST_CAP = max(Cap)
+_LAST_CAP = max(Cap, key=lambda cap: cap.value)
 
 
 class _CapabilitySet:
@@ -285,7 +285,7 @@ def _capset_from_bitmask(bitmask: int) -> Set[Cap]:
     i = 0
     while bitmask:
         if bitmask & 1:
-            if i <= _LAST_CAP:
+            if i <= _LAST_CAP.value:
                 res.add(Cap(i))
             else:
                 warnings.warn(
@@ -317,7 +317,7 @@ def _combine_bitmask_32(upper: int, lower: int) -> int:
 
 
 @enum.unique
-class Secbits(enum.IntFlag):
+class Secbits(enum.Flag):
     NOROOT = 1 << 0
     NOROOT_LOCKED = 1 << 1
     NO_SETUID_FIXUP = 1 << 2
