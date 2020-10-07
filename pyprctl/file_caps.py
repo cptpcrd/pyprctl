@@ -10,6 +10,7 @@ from .caps import (
     _capset_to_bitmask,
     _capstate_from_text,
     _capstate_to_text,
+    _split_bitmask_32,
 )
 
 
@@ -55,15 +56,32 @@ class FileCaps:
     def _into_data(self) -> bytes:
         magic = ffi.VFS_CAP_FLAGS_EFFECTIVE if self.effective else 0
 
-        permitted = _capset_to_bitmask(self.permitted)
-        inheritable = _capset_to_bitmask(self.inheritable)
+        permitted_upper, permitted_lower = _split_bitmask_32(_capset_to_bitmask(self.permitted))
+        inheritable_upper, inheritable_lower = _split_bitmask_32(
+            _capset_to_bitmask(self.inheritable)
+        )
 
         if self.rootid is None:
             magic |= ffi.VFS_CAP_REVISION_2
-            data = struct.pack("<IQQ", magic, permitted, inheritable)
+            data = struct.pack(
+                "<IIIII",
+                magic,
+                permitted_lower,
+                inheritable_lower,
+                permitted_upper,
+                inheritable_upper,
+            )
         else:
             magic |= ffi.VFS_CAP_REVISION_3
-            data = struct.pack("<IQQI", magic, permitted, inheritable, self.rootid)
+            data = struct.pack(
+                "<IIIIII",
+                magic,
+                permitted_lower,
+                inheritable_lower,
+                permitted_upper,
+                inheritable_upper,
+                self.rootid,
+            )
 
         return data
 

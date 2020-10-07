@@ -328,7 +328,7 @@ def _capset_to_bitmask(caps: Iterable[Cap]) -> int:
 
 
 def _split_bitmask_32(bitmask: int) -> Tuple[int, int]:
-    return bitmask >> 32, bitmask & ((1 << 32 - 1))
+    return bitmask >> 32, bitmask & ((1 << 32) - 1)
 
 
 def _combine_bitmask_32(upper: int, lower: int) -> int:
