@@ -48,6 +48,11 @@ def test_capstate() -> None:
     assert capstate == pyprctl.CapState.get_current()
 
 
+def test_capstate_pid_1() -> None:
+    capstate = pyprctl.CapState.get_for_pid(1)
+    assert capstate == pyprctl.CapState.get_for_pid(1)
+
+
 def test_capabilityset() -> None:
     assert pyprctl.capbset.chown == pyprctl.capbset_read(pyprctl.Cap.CHOWN)
     assert pyprctl.cap_ambient.chown == pyprctl.cap_ambient_is_set(pyprctl.Cap.CHOWN)
@@ -61,6 +66,24 @@ def test_capabilityset() -> None:
     pyprctl.cap_ambient.clear()
     pyprctl.cap_ambient.limit()
     assert pyprctl.cap_ambient.probe() == set()
+
+
+@restore_old_value(pyprctl.CapState.get_current, pyprctl.CapState.set_current)
+@restore_old_value(
+    lambda: pyprctl.cap_ambient.chown, lambda val: setattr(pyprctl.cap_ambient, "chown", val)
+)
+def test_ambient_raise_error() -> None:
+    pyprctl.cap_inheritable.chown = False
+
+    assert not pyprctl.cap_inheritable.chown
+    # It was lowered in ambient set automatically if it was previously raised
+    assert not pyprctl.cap_ambient.chown
+
+    # We can make sure it's lowered in the ambient set
+    pyprctl.cap_ambient.chown = False
+    with pytest.raises(PermissionError):
+        # But we can't raise it -- it's not in the inheritable set
+        pyprctl.cap_ambient.chown = True
 
 
 def test_capset_from_bitmask() -> None:
