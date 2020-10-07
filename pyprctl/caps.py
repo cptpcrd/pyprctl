@@ -218,9 +218,9 @@ cap_ambient = _CapabilitySet("ambient")
 
 @dataclasses.dataclass
 class CapState:
-    effective: Set[Cap]
-    permitted: Set[Cap]
-    inheritable: Set[Cap]
+    effective: Set[Cap] = dataclasses.field(default_factory=set)
+    permitted: Set[Cap] = dataclasses.field(default_factory=set)
+    inheritable: Set[Cap] = dataclasses.field(default_factory=set)
 
     @classmethod
     def get_current(cls) -> "CapState":
