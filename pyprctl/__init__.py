@@ -59,6 +59,7 @@ __all__ = (
     "get_pdeathsig",
     "set_timerslack",
     "get_timerslack",
+    "set_seccomp_mode_strict",
 )
 
 __version__ = "0.1.0"
