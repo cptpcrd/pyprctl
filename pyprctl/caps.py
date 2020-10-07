@@ -72,11 +72,59 @@ class Cap(enum.IntEnum):
     BPF = 39
     CHECKPOINT_RESTORE = 40
 
+    # Note: When adding capabilities to this list, make sure to add type annotations to the
+    # _CapabilitySet class below.
+
 
 _LAST_CAP = max(Cap)
 
 
 class _CapabilitySet:
+    # These properties will be automatically added by a loop outside of the class declaration.
+    # However, we need to tell mypy about them.
+
+    chown: bool
+    dac_override: bool
+    dac_read_search: bool
+    fowner: bool
+    fsetid: bool
+    kill: bool
+    setgid: bool
+    setuid: bool
+    setpcap: bool
+    linux_immutable: bool
+    net_bind_service: bool
+    net_broadcast: bool
+    net_admin: bool
+    net_raw: bool
+    ipc_lock: bool
+    ipc_owner: bool
+    sys_module: bool
+    sys_rawio: bool
+    sys_chroot: bool
+    sys_ptrace: bool
+    sys_pacct: bool
+    sys_admin: bool
+    sys_boot: bool
+    sys_nice: bool
+    sys_resource: bool
+    sys_time: bool
+    sys_tty_config: bool
+    mknod: bool
+    lease: bool
+    audit_write: bool
+    audit_control: bool
+    setfcap: bool
+    mac_override: bool
+    mac_admin: bool
+    syslog: bool
+    wake_alarm: bool
+    block_suspend: bool
+    audit_read: bool
+    perfmon: bool
+    bpf: bool
+    checkpoint_restore: bool
+
     def __init__(self, name: str) -> None:
         assert name in ("effective", "inheritable", "permitted", "ambient", "bounding")
 
