@@ -1,0 +1,54 @@
+task:
+  name: FreeBSD $FREEBSD_VERSION (Python $PYTHON_VERSION)
+
+  freebsd_instance:
+    cpu: 1
+    image_family: $FREEBSD_IMAGE
+
+  matrix:
+    - env:
+        FREEBSD_VERSION: 12.1
+        FREEBSD_IMAGE: freebsd-12-1
+    - env:
+        FREEBSD_VERSION: 12.1 STABLE
+        FREEBSD_IMAGE: freebsd-12-1-snap
+    # - env:
+    #     FREEBSD_VERSION: 13.0
+    #     FREEBSD_IMAGE: freebsd-13-0-snap
+
+  matrix:
+    - env:
+        PYTHON_VERSION: 3.8
+        PYTHON_PORT_NAMES: python38 py38-sqlite3
+        PYTHON_EXE: python3.8
+        PIP_EXE: python3.8 -m pip
+    - env:
+        PYTHON_VERSION: 3.7
+        PYTHON_PORT_NAMES: python37 py37-sqlite3
+        PIP_PORT_NAME: py37-pip
+        PYTHON_EXE: python3.7
+        PIP_EXE: pip-3.7
+
+  env:
+    CODECOV_TOKEN:
+
+  install_script:
+    - pkg install -y $PYTHON_PORT_NAMES cmake ninja gcc bash
+    - |
+      set -e
+      if [ -n "$PIP_PORT_NAME" ]; then
+        pkg install -y "$PIP_PORT_NAME"
+      else
+        pkg install -y curl
+        curl https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py
+        (cd /tmp && $PYTHON_EXE get-pip.py install)
+        $PIP_EXE install -U pip
+      fi
+    - $PIP_EXE install pipenv
+    - pipenv install --dev --deploy
+
+  test_script:
+    - pipenv run pytest --cov-report=xml --verbose tests/
+
+  codecov_upload_script:
+    - OS="$FREEBSD_IMAGE" bash <(curl -s https://codecov.io/bash) -e OS,PYTHON_VERSION -n "$FREEBSD_IMAGE-$PYTHON_VERSION" -Z

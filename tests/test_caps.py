@@ -1,0 +1,69 @@
+import pytest
+
+import pyprctl
+
+from .util import restore_old_value
+
+
+def test_no_new_privs_set() -> None:
+    assert not pyprctl.get_no_new_privs()
+    pyprctl.set_no_new_privs()
+    assert pyprctl.get_no_new_privs()
+
+
+@restore_old_value(pyprctl.get_keepcaps, pyprctl.set_keepcaps)
+def test_keepcaps_toggle() -> None:
+    pyprctl.set_keepcaps(True)
+    assert pyprctl.get_keepcaps()
+    assert pyprctl.Secbits.KEEP_CAPS in pyprctl.get_securebits()
+
+    pyprctl.set_keepcaps(False)
+    assert not pyprctl.get_keepcaps()
+    assert pyprctl.Secbits.KEEP_CAPS not in pyprctl.get_securebits()
+
+
+def test_ambient_probe() -> None:
+    pyprctl.cap_ambient_probe()
+
+
+def test_ambient_clear() -> None:
+    pyprctl.cap_ambient_clear_all()
+    assert pyprctl.cap_ambient_probe() == set()
+
+
+def test_bset_probe() -> None:
+    pyprctl.capbset_probe()
+
+
+def test_capstate() -> None:
+    assert pyprctl.CapState() == pyprctl.CapState()
+
+    capstate = pyprctl.CapState.get_current()
+
+    # This should match
+    assert capstate == pyprctl.CapState.get_for_pid(0)
+
+    # We can reset it to the same value
+    capstate.set_current()
+    assert capstate == pyprctl.CapState.get_current()
+
+
+def test_capset_from_bitmask() -> None:
+    assert pyprctl.caps._capset_from_bitmask(0b101) == {  # pylint: disable=protected-access
+        pyprctl.Cap(0),
+        pyprctl.Cap(2),
+    }
+
+    with pytest.warns(RuntimeWarning, match=r"^Unrecognized capability"):
+        assert (
+            pyprctl.caps._capset_from_bitmask(1 << 64) == set()  # pylint: disable=protected-access
+        )
+
+
+def test_capset_to_bitmask() -> None:
+    assert (
+        pyprctl.caps._capset_to_bitmask(  # pylint: disable=protected-access
+            [pyprctl.Cap(0), pyprctl.Cap(2)]
+        )
+        == 0b101
+    )
