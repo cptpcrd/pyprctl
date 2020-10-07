@@ -98,12 +98,7 @@ class _CapabilitySet:
 
     def add(self, *add_caps: Cap) -> None:
         if self._name == "bounding":
-            try:
-                next(iter(add_caps))
-            except StopIteration:
-                pass
-            else:
-                raise ValueError("Cannot add bounding capabilities")
+            raise ValueError("Cannot add bounding capabilities")
 
         elif self._name == "ambient":
             for cap in add_caps:
