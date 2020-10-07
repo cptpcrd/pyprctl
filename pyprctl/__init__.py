@@ -23,6 +23,7 @@ from .caps import (
     get_securebits,
     set_securebits,
 )
+from .file_caps import FileCaps
 
 __all__ = (
     "Cap",
@@ -43,6 +44,7 @@ __all__ = (
     "cap_inheritable",
     "cap_effective",
     "cap_ambient",
+    "FileCaps",
     "set_child_subreaper",
     "get_child_subreaper",
     "set_dumpable",
