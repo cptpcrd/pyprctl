@@ -48,6 +48,21 @@ def test_capstate() -> None:
     assert capstate == pyprctl.CapState.get_current()
 
 
+def test_capabilityset() -> None:
+    assert pyprctl.capbset.chown == pyprctl.capbset_read(pyprctl.Cap.CHOWN)
+    assert pyprctl.cap_ambient.chown == pyprctl.cap_ambient_is_set(pyprctl.Cap.CHOWN)
+    assert pyprctl.cap_effective.chown == (
+        pyprctl.Cap.CHOWN in pyprctl.CapState.get_current().effective
+    )
+
+    with pytest.raises(ValueError, match="Cannot add bounding capabilities"):
+        pyprctl.capbset.chown = True
+
+    pyprctl.cap_ambient.clear()
+    pyprctl.cap_ambient.limit()
+    assert pyprctl.cap_ambient.probe() == set()
+
+
 def test_capset_from_bitmask() -> None:
     assert pyprctl.caps._capset_from_bitmask(0b101) == {  # pylint: disable=protected-access
         pyprctl.Cap(0),
