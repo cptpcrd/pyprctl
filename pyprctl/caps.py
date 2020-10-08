@@ -319,6 +319,13 @@ class CapState:
         if ffi.libc.capset(ctypes.byref(header), data) < 0:
             raise ffi.build_oserror(ctypes.get_errno())
 
+    def copy(self) -> "CapState":
+        return CapState(
+            effective=self.effective.copy(),
+            permitted=self.permitted.copy(),
+            inheritable=self.inheritable.copy(),
+        )
+
     @classmethod
     def from_text(cls, text: str) -> "CapState":
         """
