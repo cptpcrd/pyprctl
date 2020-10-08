@@ -16,9 +16,25 @@ from .caps import (
 
 @dataclasses.dataclass
 class FileCaps:
+    """
+    Represents the capability sets attached to an executable file.
+    """
+
+    #: If this is ``True``, it indicates a "capability-dumb" binary. When this program is executed,
+    #: all capabilities defined in the file's permitted set will also be copied to the thread's
+    #: effective set.
+    #:
+    #: In addition, if a binary has this bit set, the kernel will refuse to launch it if the new
+    #: process would not obtain the full set of capabilities specified in the permitted set. See
+    #: capabilities(7) for more details.
     effective: bool
+    #: The permitted set; automatically added to the thread's permitted set.
     permitted: Set[Cap]
+    #: The inheritable set. This set is ANDed with the inheritable set of the launching program and
+    #: the resulting capabilities are added to the thread's permitted set.
     inheritable: Set[Cap]
+    #: For version 3 capability sets, this represents the root user ID of the user namespace in
+    #: which the file capability extended attribute was created.
     rootid: Optional[int]
 
     @classmethod
@@ -91,6 +107,11 @@ class FileCaps:
         path: Union[int, str, bytes, "os.PathLike[str]", "os.PathLike[bytes]"],
         follow_symlinks: bool = True,
     ) -> "FileCaps":
+        """
+        Retrieves the file capabilities attached to the given file. ``path`` and ``follow_symlinks``
+        are as for ``os.getxattr()``.
+        """
+
         return cls._from_data(
             os.getxattr(path, ffi.XATTR_NAME_CAPS, follow_symlinks=follow_symlinks)
         )
@@ -100,6 +121,11 @@ class FileCaps:
         path: Union[int, str, bytes, "os.PathLike[str]", "os.PathLike[bytes]"],
         follow_symlinks: bool = True,
     ) -> None:
+        """
+        Sets the file capabilities attached to the given file to the state represented by this
+        object. ``path`` and ``follow_symlinks`` are as for ``os.setxattr()``.
+        """
+
         os.setxattr(path, ffi.XATTR_NAME_CAPS, self._into_data(), follow_symlinks=follow_symlinks)
 
     @classmethod
@@ -108,10 +134,25 @@ class FileCaps:
         path: Union[int, str, bytes, "os.PathLike[str]", "os.PathLike[bytes]"],
         follow_symlinks: bool = True,
     ) -> None:
+        """
+        Removes the file capabilities attached to the given file. ``path`` and ``follow_symlinks``
+        are as for ``os.removexattr()``.
+        """
+
         os.removexattr(path, ffi.XATTR_NAME_CAPS, follow_symlinks=follow_symlinks)
 
     @classmethod
     def from_text(cls, text: str) -> "FileCaps":
+        """
+        Reconstruct a set of file capabilities from a textual representation. For example:
+        ``=``, ``=p``, or ``cap_chown=ep``.
+
+        Note that this method will raise an error if the specified "effective" set is not empty
+        and is also different from the "permitted" set. This is because Linux file capabilities
+        only has a single bit for specifying the "effective" permissions, which indicates whether
+        or not the permitted set should be copied to the effective set.
+        """
+
         effective, inheritable, permitted = _capstate_from_text(text)
 
         if effective and effective != permitted:

@@ -109,21 +109,21 @@ jobs:
       - name: Build package
         run: python setup.py sdist bdist_wheel
 
-#  build_docs:
-#    name: Build docs
-#
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - name: Set up repo
-#        uses: actions/checkout@v2
-#      - name: Set up Python
-#        uses: actions/setup-python@v2
-#      - name: Install Sphinx
-#        run: pip install sphinx sphinx_rtd_theme
-#
-#      - name: Build docs
-#        run: make -C docs html
+  build_docs:
+    name: Build docs
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up repo
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+      - name: Install Sphinx
+        run: pip install sphinx sphinx_rtd_theme
+
+      - name: Build docs
+        run: make -C docs html
 
   publish:
     name: Publish

@@ -128,9 +128,31 @@ set_child_subreaper = _make_bool_setter(ffi.PR_SET_CHILD_SUBREAPER)
 get_child_subreaper = _make_ptr_bool_getter(ffi.PR_GET_CHILD_SUBREAPER)
 
 set_dumpable = _make_bool_setter(ffi.PR_SET_DUMPABLE)
+set_dumpable.__doc__ = """
+Set the "dumpable" attribute on the current process.
+
+This controls whether a core dump will be produced if the process receives a signal whose default
+behavior is to produce a core dump.
+
+In addition, processes that are not dumpable cannot be attached with ``ptrace()`` ``PTRACE_ATTACH``.
+"""
+
 get_dumpable = _make_res_bool_getter(ffi.PR_GET_DUMPABLE)
+get_dumpable.__doc__ = """
+Get whether the "dumpable" attribute is set on the current process.
+
+See ``set_dumpable()``.
+"""
 
 set_keepcaps = _make_bool_setter(ffi.PR_SET_KEEPCAPS)
+set_keepcaps.__doc__ = """
+Set the "keep capabilities" flag on the current thread.
+
+This flag, which is always cleared across an ``exec()``, allows a thread to preserve its permitted
+capability set when switching all of its UIDs to nonzero values. See capabilities(7) for more
+information.
+"""
+
 get_keepcaps = _make_res_bool_getter(ffi.PR_GET_KEEPCAPS)
 
 
@@ -143,13 +165,33 @@ def get_mce_kill() -> MCEKillPolicy:
 
 
 def set_no_new_privs() -> None:
+    """
+    Set the no-new-privileges flag on the current thread.
+
+    Once this flag is set, it cannot be unset. This flag guarantees that in this thread and in all
+    if its children, no ``exec()`` call can ever result in elevated privileges.
+
+    """
     ffi.prctl(ffi.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)
 
 
 get_no_new_privs = _make_res_bool_getter(ffi.PR_GET_NO_NEW_PRIVS)
+get_no_new_privs.__doc__ = """
+Get whether the no-new-privileges flag is set on the current thread.
+
+See ``set_no_new_privs()``.
+"""
 
 
 def set_name(name: Union[str, bytes]) -> None:
+    """
+    Set the name of the current thread.
+
+    The name is silently truncated to the first 16 bytes. This includes the trailing NUL, so only
+    the first 15 characters of the given ``name`` will be used.
+
+    """
+
     if not isinstance(name, bytes):
         name = name.encode()
 
@@ -158,6 +200,8 @@ def set_name(name: Union[str, bytes]) -> None:
 
 
 def get_name() -> str:
+    """Get the name of the current thread as a string."""
+
     name = (ctypes.c_char * 16)()  # pytype: disable=not-callable
     ffi.prctl(ffi.PR_GET_NAME, name, 0, 0, 0)  # type: ignore
     return name.value.decode()
@@ -168,6 +212,18 @@ get_pdeathsig = _make_ptr_integer_getter(ffi.PR_GET_PDEATHSIG)
 
 
 def set_seccomp_mode_strict() -> None:
+    """
+    Enable strict seccomp mode.
+
+    After this function is is called, the only syscalls that can be made are ``read()``,
+    ``write()``, ``sigreturn()``, and ``_exit()``. Making any other syscall will result in SIGKILL
+    being sent to the process.
+
+    Note: ``sys.exit()`` and ``os._exit()`` will call ``exit_group()``. ``_exit()`` can only be
+    called with ``syscall()``.
+
+    """
+
     ffi.prctl(ffi.PR_SET_SECCOMP, ffi.SECCOMP_MODE_STRICT, 0, 0, 0)
 
 

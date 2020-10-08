@@ -32,6 +32,12 @@ ffi.libc.capset.restype = ctypes.c_int
 
 @enum.unique
 class Cap(enum.Enum):
+    """
+    An enum representing the different Linux capabilities.
+
+    See capabilities(7) for more information on each capability.
+    """
+
     CHOWN = 0
     DAC_OVERRIDE = 1
     DAC_READ_SEARCH = 2
@@ -84,7 +90,7 @@ class Cap(enum.Enum):
     def from_name(cls, name: str) -> "Cap":
         """Look up a capability by name.
 
-        Roughly equivalent to cap_from_name() in libcap.
+        Roughly equivalent to ``cap_from_name()`` in libcap.
         Names should be in the format "cap_chown", NOT "CAP_CHOWN"/"CHOWN"/"chown".
 
         """
@@ -240,16 +246,37 @@ cap_ambient = _CapabilitySet("ambient")
 
 @dataclasses.dataclass
 class CapState:
+    """
+    Represents a thread's capability state (i.e. the effective, permitted and inheritable capability
+    sets).
+    """
+
+    #: The effective capability set (used for permission checks)
     effective: Set[Cap] = dataclasses.field(default_factory=set)
+    #: The permitted capability set. This is the bounding set for the thread's effective
+    #: capabilities. It also limits which capabilities a thread that does not have CAP_SETPCAP can
+    #: add to its inheritable set. See capabilities(7) for more details.
     permitted: Set[Cap] = dataclasses.field(default_factory=set)
+    #: The inheritable capabilities set. This is preserved across ``exec()``. In addition, when
+    #: ``exec()``-ing a program that has the corresponding capabilities in its inheritable set,
+    #: these capabilities will be added to the permitted set. See capabilities(7) for more details.
     inheritable: Set[Cap] = dataclasses.field(default_factory=set)
 
     @classmethod
     def get_current(cls) -> "CapState":
+        """
+        Get the capability state of the current thread.
+        """
         return cls.get_for_pid(0)
 
     @classmethod
     def get_for_pid(cls, pid: int) -> "CapState":
+        """
+        Get the capability state of the process (or thread) with the given PID (or TID).
+
+        If ``pid`` is 0, this is equivalent to ``CapState.get_current()``.
+        """
+
         header = _CapUserHeader(
             version=ffi._LINUX_CAPABILITY_VERSION_3, pid=pid  # pylint: disable=protected-access
         )
@@ -273,6 +300,11 @@ class CapState:
         return res
 
     def set_current(self) -> None:
+        """
+        Set the capability state of the current thread to the capability set represented by this
+        object.
+        """
+
         header = _CapUserHeader(
             version=ffi._LINUX_CAPABILITY_VERSION_3, pid=0  # pylint: disable=protected-access
         )
@@ -289,6 +321,11 @@ class CapState:
 
     @classmethod
     def from_text(cls, text: str) -> "CapState":
+        """
+        Reconstruct a capability state from a textual representation. For example: ``=``, ``=p``,
+        or ``cap_chown=ep``.
+        """
+
         effective, inheritable, permitted = _capstate_from_text(text)
         return cls(effective=effective, inheritable=inheritable, permitted=permitted)
 
@@ -530,21 +567,55 @@ def _capstate_to_text(*, effective: Set[Cap], inheritable: Set[Cap], permitted: 
 
 @enum.unique
 class Secbits(enum.Flag):
+    """
+    Represents the different securebits that can be used to change the kernel's handling of
+    capabilities for UID 0.
+    """
+
+    #: If this bit is set, the kernel will not grant capabilities to set-user-ID-root programs, or
+    #: to processes with an effective or real user ID of 0 on ``exec()``. See capabilities(7) for
+    #: more details.
     NOROOT = 1 << 0
+    #: "Locks" the NOROOT securebit so it cannot be changed.
     NOROOT_LOCKED = 1 << 1
+    #: Stops the kernel from adjusting the process's permitted/effective/ambient capabilities when
+    #: the process's effective and filesystem UIDs are switched between 0 and nonzero. See
+    #: capabilities(7) for more details.
     NO_SETUID_FIXUP = 1 << 2
+    #: "Locks" the NO_SETUID_FIXUP securebit so it cannot be changed.
     NO_SETUID_FIXUP_LOCKED = 1 << 3
+    #: Provides the same functionality as :py:func:`get_keepcaps()` and :py:func:`set_keepcaps()`.
+    #:
+    #: Note that changes made with :py:func:`get_keepcaps()`/:py:func:`set_keepcaps()` are reflected
+    #: in the value of this flag as returned by :py:func:`get_securebits()`, and vice versa. Since
+    #: changing the securebits requires CAP_SETPCAP, it may be better to use those functions instead
+    #: if this is the only securebit that you need to change.
     KEEP_CAPS = 1 << 4
+    #: "Locks" the KEEP_CAPS securebit so it cannot be changed.
+    #:
+    #: Note: If the KEEP_CAPS securebit is set, even if it is "locked" using this flag, the kernel
+    #: will still clear it on an ``exec()``. So this setting is only really useful to lock the
+    #: KEEP_CAPS securebit as "off".
     KEEP_CAPS_LOCKED = 1 << 5
+    #: Disables raising ambient capabilities (such as with :py:func:`cap_ambient_raise()`).
     NO_CAP_AMBIENT_RAISE = 1 << 6
+    #: "Locks" the NO_CAP_AMBIENT_RAISE securebit so it cannot be changed.
     NO_CAP_AMBIENT_RAISE_LOCKED = 1 << 7
 
 
 def get_securebits() -> Secbits:
+    """
+    Get the current secure bits.
+    """
     return Secbits(ffi.prctl(ffi.PR_GET_SECUREBITS, 0, 0, 0, 0))
 
 
 def set_securebits(secbits: Secbits) -> None:
+    """
+    Set the current secure bits.
+
+    (This requires CAP_SETPCAP.)
+    """
     ffi.prctl(ffi.PR_SET_SECUREBITS, secbits.value, 0, 0, 0)
 
 
@@ -585,6 +656,14 @@ securebits = _SecurebitsAccessor()
 
 
 def capbset_read(cap: Cap) -> Optional[bool]:
+    """
+    Check whether the given capability is present in the current thread's bounding capability set.
+
+    This returns ``True`` if the capability is present, ``False`` if it is not, and ``None``
+    if the kernel does not support this capability (may arise when using newer capabilities on older
+    kernels).
+    """
+
     try:
         return bool(ffi.prctl(ffi.PR_CAPBSET_READ, cap.value, 0, 0, 0))
     except OSError as ex:
@@ -595,26 +674,55 @@ def capbset_read(cap: Cap) -> Optional[bool]:
 
 
 def capbset_drop(cap: Cap) -> None:
+    """
+    Remove the given capability from the current thread's bounding capability set.
+
+    (This requires the CAP_SETPCAP capability.)
+    """
     ffi.prctl(ffi.PR_CAPBSET_DROP, cap.value, 0, 0, 0)
 
 
 def capbset_probe() -> Set[Cap]:
+    """
+    "Probe" the current thread's bounding capability set and return a set of all the capabilities
+    that are present in this thread's bounding capability set.
+    """
     return set(filter(capbset_read, Cap))
 
 
 def cap_ambient_raise(cap: Cap) -> None:
+    """
+    Raise the given capability in the current thread's ambient set.
+
+    (The capability must already be present in the thread's permitted set and and the thread's
+    inheritable set, and the SECBIT_NO_CAP_AMBIENT_RAISE securebit must not be set.)
+    """
     ffi.prctl(ffi.PR_CAP_AMBIENT, ffi.PR_CAP_AMBIENT_RAISE, cap.value, 0, 0)
 
 
 def cap_ambient_lower(cap: Cap) -> None:
+    """
+    Lower the given capability in the current thread's ambient set.
+    """
     ffi.prctl(ffi.PR_CAP_AMBIENT, ffi.PR_CAP_AMBIENT_LOWER, cap.value, 0, 0)
 
 
 def cap_ambient_clear_all() -> None:
+    """
+    Clear all ambient capabilities from the current thread.
+    """
     ffi.prctl(ffi.PR_CAP_AMBIENT, ffi.PR_CAP_AMBIENT_CLEAR_ALL, 0, 0, 0)
 
 
 def cap_ambient_is_set(cap: Cap) -> Optional[bool]:
+    """
+    Check whether the given capability is raised in the current thread's ambient capability set.
+
+    This returns ``True`` if the capability is raised, ``False`` if it is lowered, and ``None``
+    if the kernel does not support this capability (may arise when using newer capabilities on older
+    kernels).
+    """
+
     try:
         return bool(ffi.prctl(ffi.PR_CAP_AMBIENT, ffi.PR_CAP_AMBIENT_IS_SET, cap.value, 0, 0))
     except OSError as ex:
@@ -625,4 +733,8 @@ def cap_ambient_is_set(cap: Cap) -> Optional[bool]:
 
 
 def cap_ambient_probe() -> Set[Cap]:
+    """
+    "Probe" the current thread's ambient capability set and return a set of all the capabilities
+    that are raised in this thread's ambient capability set.
+    """
     return set(filter(cap_ambient_is_set, Cap))
