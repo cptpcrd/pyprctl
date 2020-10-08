@@ -787,12 +787,31 @@ def cap_set_ids(
     is because of the way Linux operates. If you call this function from a multithreaded program,
     you are responsible for synchronizing changes across threads to ensure proper security.
 
-    Note: If an error occurs while this function is attempting to change the process's
+    Note: If an error occurs while this function is attempting to change the thread's
     UID/GID/supplementary groups, this function will still attempt to set the effective capability
     set as specified by ``preserve_effective_caps``. However, this may fail. Programs that plan on
-    performing further actions if this function returns an error should first check the process's
+    performing further actions if this function returns an error should first check the thread's
     capability set and ensure that the correct capabilities are raised/lowered.
     """
+
+    # We do type checks up front to avoid errors in the middle of changing the UIDs/GIDs.
+
+    if uid is not None and not isinstance(uid, int):
+        raise TypeError("Invalid type {!r} for 'uid' argument".format(uid.__class__.__name__))
+
+    if gid is not None and not isinstance(gid, int):
+        raise TypeError("Invalid type {!r} for 'gid' argument".format(gid.__class__.__name__))
+
+    if groups is not None:
+        groups = list(groups)
+
+        for supp_gid in groups:
+            if not isinstance(supp_gid, int):
+                raise TypeError(
+                    "Invalid type {!r} for value in 'groups' list".format(
+                        supp_gid.__class__.__name__
+                    )
+                )
 
     capstate = CapState.get_current()
 
@@ -820,7 +839,7 @@ def cap_set_ids(
                 ffi.sys_setresgid(gid, gid, gid)
 
             if groups is not None:
-                os.setgroups(list(groups))
+                os.setgroups(groups)
 
             if uid is not None:
                 ffi.sys_setresuid(uid, uid, uid)
