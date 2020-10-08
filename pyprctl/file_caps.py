@@ -101,6 +101,14 @@ class FileCaps:
 
         return data
 
+    def copy(self) -> "FileCaps":
+        return FileCaps(
+            effective=self.effective,
+            permitted=self.permitted.copy(),
+            inheritable=self.inheritable.copy(),
+            rootid=self.rootid,
+        )
+
     @classmethod
     def get_for_file(
         cls,
