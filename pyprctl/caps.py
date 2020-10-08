@@ -481,7 +481,7 @@ def _capstate_to_text(*, effective: Set[Cap], inheritable: Set[Cap], permitted: 
         eff: bool = False,
         inh: bool = False,
         perm: bool = False,
-        drop: bool = False
+        drop: bool = False,
     ) -> None:
         if not caps:
             # Nothing to do!
