@@ -67,3 +67,27 @@ def test_filecaps_into_data() -> None:
         == b"\x01\x00\x00\x03\x020\x00\x00\x020\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
         b"\xe8\x03\x00\x00"
     )
+
+
+def test_filecaps_copy() -> None:
+    for fcaps in [
+        pyprctl.FileCaps(
+            effective=False,
+            permitted={pyprctl.Cap.CHOWN},
+            inheritable={pyprctl.Cap.SYS_CHROOT},
+            rootid=None,
+        ),
+        pyprctl.FileCaps(
+            effective=True,
+            permitted={pyprctl.Cap.DAC_OVERRIDE, pyprctl.Cap.NET_ADMIN, pyprctl.Cap.NET_RAW},
+            inheritable={pyprctl.Cap.DAC_OVERRIDE, pyprctl.Cap.NET_ADMIN, pyprctl.Cap.NET_RAW},
+            rootid=None,
+        ),
+        pyprctl.FileCaps(
+            effective=True,
+            permitted={pyprctl.Cap.DAC_OVERRIDE, pyprctl.Cap.NET_ADMIN, pyprctl.Cap.NET_RAW},
+            inheritable={pyprctl.Cap.DAC_OVERRIDE, pyprctl.Cap.NET_ADMIN, pyprctl.Cap.NET_RAW},
+            rootid=1000,
+        ),
+    ]:
+        assert fcaps.copy() == fcaps
