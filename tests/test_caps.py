@@ -48,6 +48,16 @@ def test_capstate() -> None:
     assert capstate == pyprctl.CapState.get_current()
 
 
+def test_capstate_copy() -> None:
+    capstate = pyprctl.CapState(
+        effective={pyprctl.Cap.CHOWN},
+        inheritable={pyprctl.Cap.SYS_CHROOT},
+        permitted={pyprctl.Cap.CHOWN, pyprctl.Cap.SYS_CHROOT},
+    )
+
+    assert capstate.copy() == capstate
+
+
 def test_capstate_pid_1() -> None:
     capstate = pyprctl.CapState.get_for_pid(1)
     assert capstate == pyprctl.CapState.get_for_pid(1)
