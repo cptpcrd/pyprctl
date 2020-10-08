@@ -732,6 +732,13 @@ def cap_ambient_is_set(cap: Cap) -> Optional[bool]:
             raise
 
 
+def cap_ambient_supported() -> bool:
+    """
+    Check whether the running kernel supports ambient capabilities.
+    """
+    return cap_ambient_is_set(Cap.CHOWN) is not None
+
+
 def cap_ambient_probe() -> Set[Cap]:
     """
     "Probe" the current thread's ambient capability set and return a set of all the capabilities
