@@ -82,10 +82,10 @@ def test_capabilityset() -> None:
     assert pyprctl.cap_ambient.probe() == set()
 
 
-@restore_old_value(pyprctl.CapState.get_current, pyprctl.CapState.set_current)
 @restore_old_value(
     lambda: pyprctl.cap_ambient.chown, lambda val: setattr(pyprctl.cap_ambient, "chown", val)
 )
+@restore_old_value(pyprctl.CapState.get_current, pyprctl.CapState.set_current)
 def test_ambient_raise_error() -> None:
     pyprctl.cap_inheritable.chown = False
 
