@@ -8,6 +8,7 @@ Welcome to pyprctl's documentation!
 
 .. automodule:: pyprctl
    :members:
+   :private-members: _sys_exit
    :undoc-members:
    :show-inheritance:
 

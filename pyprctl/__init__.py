@@ -20,6 +20,7 @@ from .caps import (
     securebits,
     set_securebits,
 )
+from .ffi import sys_exit as _sys_exit
 from .file_caps import FileCaps
 from .misc import (
     MCEKillPolicy,
@@ -88,6 +89,7 @@ __all__ = (
     "set_timing",
     "get_timing",
     "set_seccomp_mode_strict",
+    "_sys_exit",
 )
 
 __version__ = "0.1.0"

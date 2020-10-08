@@ -157,8 +157,9 @@ def set_seccomp_mode_strict() -> None:
     ``write()``, ``sigreturn()``, and ``_exit()``. Making any other syscall will result in SIGKILL
     being sent to the process.
 
-    Note: ``sys.exit()`` and ``os._exit()`` will call ``exit_group()``. ``_exit()`` can only be
-    called with ``syscall()``.
+    Note: ``sys.exit()`` and ``os._exit()`` will call the ``exit_group()`` syscall, not ``_exit()``.
+    ``pyprctl`` exposes a function :py:func:`_sys_exit()` that calls the ``_exit()`` syscall
+    directly.
 
     """
 

@@ -1,4 +1,3 @@
-import ctypes
 import os
 import signal
 import subprocess
@@ -76,30 +75,13 @@ def test_timing_toggle() -> None:
         pyprctl.set_timing(pyprctl.TimingMethod.TIMESTAMP)
 
 
-pyprctl.ffi.libc.syscall.argtypes = (ctypes.c_long,)
-pyprctl.ffi.libc.syscall.restype = ctypes.c_long
-
-# We need to determine the right value for _SYS_exit so we can call it with syscall()
-machine = os.uname().machine
-if machine == "x86_64":
-    _sys_exit = 60
-elif machine in ("i386", "i486", "i586", "i686"):
-    _sys_exit = 1
-elif machine.startswith("aarch64") or machine.startswith("riscv"):
-    _sys_exit = 93
-elif machine in ("alpha", "sh") or machine.startswith(("arm", "ppc", "s90")):
-    _sys_exit = 1
-else:
-    raise RuntimeError("Unsupported platform")
-
-
 def test_seccomp_mode_strict() -> None:
     def do_test(callback: Callable[[], Any], res: int) -> None:
         pid = os.fork()
         if pid == 0:
             pyprctl.set_seccomp_mode_strict()
             callback()
-            pyprctl.ffi.libc.syscall(_sys_exit, 0)
+            pyprctl._sys_exit(0)  # pylint: disable=protected-access
 
         _, wstatus = os.waitpid(pid, 0)
         assert res == (

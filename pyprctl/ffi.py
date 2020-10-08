@@ -35,6 +35,9 @@ except OSError as ex:
 libc.prctl.argtypes = (ctypes.c_int, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong)
 libc.prctl.restype = ctypes.c_int
 
+libc.syscall.argtypes = (ctypes.c_long,)
+libc.syscall.restype = ctypes.c_long
+
 
 def build_oserror(
     eno: int,
@@ -76,6 +79,67 @@ def prctl(
         raise build_oserror(ctypes.get_errno())
 
     return cast(int, res)
+
+
+_machine = os.uname().machine
+
+# Mini-syscall table
+if _machine == "x86_64":
+    _SYS_SETRESUID = 117
+    _SYS_SETRESGID = 119
+    _SYS_EXIT = 60
+elif _machine.startswith("aarch64"):
+    _SYS_SETRESUID = 147
+    _SYS_SETRESGID = 149
+    _SYS_EXIT = 93
+elif _machine.startswith("arm"):
+    _SYS_SETRESUID = 208
+    _SYS_SETRESGID = 210
+    _SYS_EXIT = 1
+elif _machine in ("i386", "i486", "i586", "i686"):
+    _SYS_SETRESUID = 208
+    _SYS_SETRESGID = 210
+    _SYS_EXIT = 1
+elif _machine.startswith("riscv"):
+    _SYS_SETRESUID = 147
+    _SYS_SETRESGID = 149
+    _SYS_EXIT = 93
+elif _machine.startswith("sparc"):
+    _SYS_SETRESUID = 108
+    _SYS_SETRESGID = 110
+    _SYS_EXIT = 1
+elif _machine.startswith("ppc"):
+    _SYS_SETRESUID = 164
+    _SYS_SETRESGID = 169
+    _SYS_EXIT = 1
+elif _machine.startswith("s390"):
+    _SYS_SETRESUID = 208
+    _SYS_SETRESGID = 210
+    _SYS_EXIT = 1
+elif _machine == "sh":
+    _SYS_SETRESUID = 164
+    _SYS_SETRESGID = 170
+    _SYS_EXIT = 1
+else:
+    raise RuntimeError("Unsupported platform")
+
+
+def sys_setresuid(ruid: int, euid: int, suid: int) -> None:
+    libc.syscall(_SYS_SETRESUID, ruid, euid, suid)
+
+
+def sys_setresgid(rgid: int, egid: int, sgid: int) -> None:
+    libc.syscall(_SYS_SETRESGID, rgid, egid, sgid)
+
+
+def sys_exit(res: int) -> None:
+    """
+    Call the ``_exit()`` system call. This exits the calling thread, but does not terminate other
+    threads in the same process.
+    """
+    libc.syscall(_SYS_EXIT, res)
+
+    assert False, "If we got here, something is very wrong"
 
 
 PR_SET_PDEATHSIG = 1
