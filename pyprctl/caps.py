@@ -548,6 +548,42 @@ def set_securebits(secbits: Secbits) -> None:
     ffi.prctl(ffi.PR_SET_SECUREBITS, secbits.value, 0, 0, 0)
 
 
+class _SecurebitsAccessor:  # pylint: disable=too-few-public-methods
+    def _make_property(  # type: ignore  # pylint: disable=no-self-argument
+        secbit: Secbits,
+    ) -> property:
+        def getter(self: "_SecurebitsAccessor") -> bool:  # pylint: disable=unused-argument
+            return bool(get_securebits() & secbit)
+
+        def setter(
+            self: "_SecurebitsAccessor", value: bool  # pylint: disable=unused-argument
+        ) -> None:
+            cur_secbits = get_securebits()
+
+            if value:
+                cur_secbits |= secbit
+            else:
+                cur_secbits &= ~secbit  # pylint: disable=invalid-unary-operand-type
+
+            set_securebits(cur_secbits)
+
+        return property(getter, setter)
+
+    noroot = _make_property(Secbits.NOROOT)
+    noroot_locked = _make_property(Secbits.NOROOT_LOCKED)
+    no_setuid_fixup = _make_property(Secbits.NO_SETUID_FIXUP)
+    no_setuid_fixup_locked = _make_property(Secbits.NO_SETUID_FIXUP_LOCKED)
+    keep_caps = _make_property(Secbits.KEEP_CAPS)
+    keep_caps_locked = _make_property(Secbits.KEEP_CAPS_LOCKED)
+    no_cap_ambient_raise = _make_property(Secbits.NO_CAP_AMBIENT_RAISE)
+    no_cap_ambient_raise_locked = _make_property(Secbits.NO_CAP_AMBIENT_RAISE_LOCKED)
+
+    del _make_property
+
+
+securebits = _SecurebitsAccessor()
+
+
 def capbset_read(cap: Cap) -> Optional[bool]:
     try:
         return bool(ffi.prctl(ffi.PR_CAPBSET_READ, cap.value, 0, 0, 0))

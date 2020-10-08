@@ -16,10 +16,12 @@ def test_keepcaps_toggle() -> None:
     pyprctl.set_keepcaps(True)
     assert pyprctl.get_keepcaps()
     assert pyprctl.Secbits.KEEP_CAPS in pyprctl.get_securebits()
+    assert pyprctl.securebits.keep_caps
 
     pyprctl.set_keepcaps(False)
     assert not pyprctl.get_keepcaps()
     assert pyprctl.Secbits.KEEP_CAPS not in pyprctl.get_securebits()
+    assert not pyprctl.securebits.keep_caps
 
 
 def test_ambient_probe() -> None:

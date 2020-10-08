@@ -21,6 +21,7 @@ from .caps import (
     capbset_probe,
     capbset_read,
     get_securebits,
+    securebits,
     set_securebits,
 )
 from .file_caps import FileCaps
@@ -44,6 +45,7 @@ __all__ = (
     "cap_inheritable",
     "cap_effective",
     "cap_ambient",
+    "securebits",
     "FileCaps",
     "set_child_subreaper",
     "get_child_subreaper",
