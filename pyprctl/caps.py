@@ -2,11 +2,13 @@ import ctypes
 import dataclasses
 import enum
 import errno
+import os
 import re
 import warnings
 from typing import Callable, Iterable, List, Optional, Set, Tuple, cast
 
 from . import ffi
+from .misc import get_keepcaps, set_keepcaps
 
 
 class _CapUserHeader(ctypes.Structure):  # pylint: disable=too-few-public-methods
@@ -752,3 +754,81 @@ def cap_ambient_probe() -> Set[Cap]:
     that are raised in this thread's ambient capability set.
     """
     return set(filter(cap_ambient_is_set, Cap))
+
+
+def cap_set_ids(
+    *,
+    uid: Optional[int] = None,
+    gid: Optional[int] = None,
+    groups: Optional[Iterable[int]] = None,
+    preserve_effective_caps: bool = False,
+) -> None:
+    """
+    Set UID/GID/supplementary groups while preserving permitted capabilities.
+
+    This combines the functionality of ``libcap``'s ``cap_setuid()`` and ``cap_setgroups()``, while
+    also providing greater flexibility.
+
+    This function performs the following actions in order. (Note: If ``gid`` is not ``None`` or
+    ``groups`` is not ``None``, CAP_SETGID will first be raised, and if ``uid`` is not ``None`` then
+    CAP_SETUID will be raised.)
+
+    - If ``gid`` is not ``None``, the thread's real, effective and saved GIDs will be set to
+      ``gid``.
+    - If ``groups`` is not ``None``, the thread's supplementary group list will be set to
+      ``groups``.
+    - If ``uid`` is not ``None``, the thread's real, effective and saved UIDs will be set to
+      ``uid``.
+    - If ``preserve_effective_caps`` is ``True``, after this is done, the effective capability set
+      will be restored to its original contents. By default, this function mimics ``libcap`` and
+      empties the effective capability set before returning.
+
+    Note: Yes, this function only operates on the current thread, not the process as a whole. This
+    is because of the way Linux operates. If you call this function from a multithreaded program,
+    you are responsible for synchronizing changes across threads to ensure proper security.
+
+    Note: If an error occurs while this function is attempting to change the process's
+    UID/GID/supplementary groups, this function will still attempt to set the effective capability
+    set as specified by ``preserve_effective_caps``. However, this may fail. Programs that plan on
+    performing further actions if this function returns an error should first check the process's
+    capability set and ensure that the correct capabilities are raised/lowered.
+    """
+
+    capstate = CapState.get_current()
+
+    # Save the original effective capability set for future reference.
+    orig_effective = capstate.effective.copy()
+
+    # Add the correct capabilities
+    if gid is not None or groups is not None:
+        capstate.effective.add(Cap.SETGID)
+    if uid is not None:
+        capstate.effective.add(Cap.SETUID)
+
+    # Don't call capset() if we already had those capabilities
+    if capstate.effective != orig_effective:
+        capstate.set_current()
+
+    try:
+        orig_keepcaps = get_keepcaps()
+        set_keepcaps(True)
+
+        try:
+            # Now actually set the UIDs/GIDs
+
+            if gid is not None:
+                ffi.sys_setresgid(gid, gid, gid)
+
+            if groups is not None:
+                os.setgroups(list(groups))
+
+            if uid is not None:
+                ffi.sys_setresuid(uid, uid, uid)
+
+        finally:
+            set_keepcaps(orig_keepcaps)
+
+    finally:
+        # Set the effective capability set to the correct value
+        capstate.effective = orig_effective if preserve_effective_caps else set()
+        capstate.set_current()
