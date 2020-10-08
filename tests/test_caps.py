@@ -24,6 +24,10 @@ def test_keepcaps_toggle() -> None:
     assert not pyprctl.securebits.keep_caps
 
 
+def test_ambient_supported() -> None:
+    assert pyprctl.cap_ambient_supported()
+
+
 def test_ambient_probe() -> None:
     pyprctl.cap_ambient_probe()
 
