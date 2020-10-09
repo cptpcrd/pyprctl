@@ -1,3 +1,4 @@
+import contextlib
 import ctypes
 import dataclasses
 import enum
@@ -5,7 +6,7 @@ import errno
 import os
 import re
 import warnings
-from typing import Callable, Iterable, List, Optional, Set, Tuple, cast
+from typing import Callable, Iterable, Iterator, List, Optional, Set, Tuple, cast
 
 from . import ffi
 from .misc import get_keepcaps, set_keepcaps
@@ -875,4 +876,50 @@ def cap_set_ids(
     finally:
         # Set the effective capability set to the correct value
         capstate.effective = orig_effective if preserve_effective_caps else set()
+        capstate.set_current()
+
+
+@contextlib.contextmanager
+def scoped_effective_caps(effective: Iterable[Cap]) -> Iterator[None]:
+    """
+    When used as a context manager, this function sets the effective capability set to contain only
+    the specified capabilities, then restores it to its original contents after the body of the
+    context manager has executed.
+
+    For example::
+
+        with scoped_effective_caps([Cap.CHOWN]):
+            ...  # CAP_CHOWN is raised in the effective set; all other capabilites are lowered
+
+    .. note::
+
+        Changes made to the effective capability set in the body of the context manager will **not**
+        be preserved. This function will still revert the effective capability set to its original
+        contents when the body of the context manager finishes executing.
+
+        However, changes made to any of the other 4 capability sets (permitted, inheritable,
+        ambient, and bounding) in the body of the context manager *will* be preserved. (Be careful
+        not to remove any of the capabilities present in the original effective set from the
+        permitted set, or this function may fail to revert to the original effective set.)
+
+    """
+
+    effective = set(effective)
+
+    capstate = CapState.get_current()
+    orig_effective = capstate.effective.copy()
+
+    if effective != orig_effective:
+        # Swap in the new effective set if it's different
+        capstate.effective = effective
+        capstate.set_current()
+
+    try:
+        yield
+    finally:
+        # Replace the original effective set.
+        # We re-retrieve the capability state because the code in the context manager might have
+        # made other changes.
+        capstate = CapState.get_current()
+        capstate.effective = orig_effective
         capstate.set_current()

@@ -18,6 +18,7 @@ from .caps import (
     capbset_probe,
     capbset_read,
     get_securebits,
+    scoped_effective_caps,
     securebits,
     set_securebits,
 )
@@ -63,6 +64,7 @@ __all__ = (
     "get_securebits",
     "set_securebits",
     "cap_set_ids",
+    "scoped_effective_caps",
     "capbset",
     "cap_permitted",
     "cap_inheritable",
