@@ -7,10 +7,9 @@ from typing import Union, cast
 _libc_path = ctypes.util.find_library("c")
 
 if _libc_path is None:
-    # If we couldn't find a libc, sys.executable is probably statically linked.
-    # So we may be able to load *it*.
-    # Statically linked executables may not have all the symbols defined, but there's
-    # a good chance.
+    # If we couldn't find a libc, we may be able to load sys.executable. This looks weird, but it
+    # actually seems to work on systems using musl libc. Maybe it will work on statically linked
+    # systems too?
 
     if not sys.executable:
         raise RuntimeError(
