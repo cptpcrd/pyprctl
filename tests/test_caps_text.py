@@ -80,6 +80,12 @@ def test_capstate_from_text() -> None:
         effective={pyprctl.Cap.CHOWN}, permitted=set(), inheritable=set()
     )
 
+    # Case-insensitive
+    assert pyprctl.CapState.from_text("ALL=") == empty_state
+    assert pyprctl.CapState.from_text("CAP_CHOWN=e") == pyprctl.CapState(
+        effective={pyprctl.Cap.CHOWN}, permitted=set(), inheritable=set()
+    )
+
     assert pyprctl.CapState.from_text("cap_chown=ei") == pyprctl.CapState(
         effective={pyprctl.Cap.CHOWN}, permitted=set(), inheritable={pyprctl.Cap.CHOWN}
     )
@@ -99,6 +105,9 @@ def test_capstate_from_text() -> None:
 
     with pytest.raises(ValueError, match="Repeated flag characters"):
         pyprctl.CapState.from_text("cap_chown++e")
+
+    with pytest.raises(ValueError, match="Invalid character"):
+        pyprctl.CapState.from_text("cap_chown=E")
 
     with pytest.raises(ValueError, match="Invalid character"):
         pyprctl.CapState.from_text("cap_chown=o")

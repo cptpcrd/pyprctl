@@ -90,14 +90,17 @@ class Cap(enum.Enum):
     def from_name(cls, name: str) -> "Cap":
         """Look up a capability by name.
 
-        Roughly equivalent to ``cap_from_name()`` in libcap.
-        Names should be in the format "cap_chown", NOT "CAP_CHOWN"/"CHOWN"/"chown".
+        Roughly equivalent to ``cap_from_name()`` in libcap. Names are matched case-insensitively,
+        but they must include a "cap_" prefix (also case-insensitive; "CAP_" and "Cap_" are valid
+        too).
 
         """
 
-        if name.islower() and name.startswith("cap_"):
+        upper_name = name.upper()
+
+        if upper_name.startswith("CAP_"):
             try:
-                return cast(Cap, getattr(cls, name[4:].upper()))
+                return cast(Cap, getattr(cls, upper_name[4:]))
             except AttributeError:
                 pass
 
@@ -402,7 +405,7 @@ def _capstate_from_text(text: str) -> Tuple[Set[Cap], Set[Cap], Set[Cap]]:
 
         caps = (
             list(Cap)
-            if cap_names in ("", "all")
+            if cap_names.lower() in ("", "all")
             else [Cap.from_name(name) for name in cap_names.split(",")]
         )
 
