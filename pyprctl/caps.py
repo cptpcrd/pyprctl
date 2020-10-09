@@ -216,6 +216,14 @@ class _CapabilitySet:
         else:
             self.drop(*Cap)
 
+    def __repr__(self) -> str:
+        return "<{} capability set: {}>".format(self._name.title(), self)
+
+    def __str__(self) -> str:
+        return "=" + ",".join(
+            "cap_" + cap.name.lower() for cap in sorted(self.probe(), key=lambda cap: cap.value)
+        )
+
 
 def _create_capabilityset_getter_setter(
     cap: Cap,
@@ -655,6 +663,27 @@ class _SecurebitsAccessor:  # pylint: disable=too-few-public-methods
     no_cap_ambient_raise_locked = _make_property(Secbits.NO_CAP_AMBIENT_RAISE_LOCKED)
 
     del _make_property
+
+    _lock_map = {
+        secbit: getattr(Secbits, secbit.name + "_LOCKED")
+        for secbit in Secbits
+        if not secbit.name.endswith("_LOCKED")
+    }
+
+    def __repr__(self) -> str:
+        return "<Securebits: {}>".format(self)
+
+    def __str__(self) -> str:
+        cur_secbits = get_securebits()
+
+        return ", ".join(
+            "secure-{}: {} ({})".format(
+                secbit.name.lower().replace("_", "-"),
+                "yes" if secbit in cur_secbits else "no",
+                "locked" if lock_secbit in cur_secbits else "unlocked",
+            )
+            for secbit, lock_secbit in self._lock_map.items()
+        )
 
 
 securebits = _SecurebitsAccessor()
