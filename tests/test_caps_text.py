@@ -113,6 +113,21 @@ def test_capstate_from_text() -> None:
         pyprctl.CapState.from_text("chown=e")
 
 
+def test_capstate_to_from_text() -> None:
+    for capstate in [
+        pyprctl.CapState(),
+        pyprctl.CapState(effective=set(pyprctl.Cap)),
+        pyprctl.CapState(
+            permitted=set(pyprctl.Cap), inheritable={pyprctl.Cap.CHOWN, pyprctl.Cap.SYS_CHROOT}
+        ),
+        pyprctl.CapState(
+            permitted=set(pyprctl.Cap),
+            inheritable=set(pyprctl.Cap) - {pyprctl.Cap.CHOWN, pyprctl.Cap.SYS_CHROOT},
+        ),
+    ]:
+        assert pyprctl.CapState.from_text(str(capstate)) == capstate
+
+
 def test_filecaps_to_text() -> None:
     assert (
         str(pyprctl.FileCaps(effective=False, permitted=set(), inheritable=set(), rootid=None))
@@ -196,3 +211,29 @@ def test_filecaps_from_text() -> None:
         ValueError, match="non-empty effective set that is not equal to permitted set"
     ):
         pyprctl.FileCaps.from_text("cap_chown+ep cap_sys_chroot+e")
+
+
+def test_filecaps_to_from_text() -> None:
+    for filecaps in [
+        pyprctl.FileCaps(permitted=set(), inheritable=set(), effective=False, rootid=None),
+        pyprctl.FileCaps(
+            permitted=set(pyprctl.Cap), inheritable=set(), effective=False, rootid=None
+        ),
+        pyprctl.FileCaps(
+            permitted=set(pyprctl.Cap),
+            inheritable={pyprctl.Cap.CHOWN, pyprctl.Cap.SYS_CHROOT},
+            effective=False,
+            rootid=None,
+        ),
+        pyprctl.FileCaps(
+            permitted=set(pyprctl.Cap),
+            inheritable=set(pyprctl.Cap) - {pyprctl.Cap.CHOWN, pyprctl.Cap.SYS_CHROOT},
+            effective=True,
+            rootid=None,
+        ),
+    ]:
+        print(repr(filecaps))
+        print(repr(pyprctl.FileCaps.from_text(str(filecaps))))
+        print(str(filecaps))
+        print(pyprctl.FileCaps.from_text(str(filecaps)))
+        assert pyprctl.FileCaps.from_text(str(filecaps)) == filecaps
