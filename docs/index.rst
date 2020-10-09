@@ -5,6 +5,41 @@ Welcome to pyprctl's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+``pyprctl`` provides an interface to Linux's ``prctl()`` system call, and to Linux capabilities in general, that is written in pure Python with no external dependencies. (You don't even need to have ``libcap`` installed!)
+
+This library and portions of its API were inspired by ``python-prctl``, but it is not a fork.
+
+Important security note!
+========================
+
+On Linux, credentials (real/effective/saved UIDs, real/effective/saved GIDs, supplementary groups, and all of the capability sets) are **per-thread** attributes. If you change these attributes in one thread, other threads in the same process are unaffected. This can lead to `security issues <https://ewontfix.com/17/>`_.
+
+To try to mitigate this, glibc and musl make clever use of realtime signals to synchronize changes made to the real/effective/saved UIDs/GIDs across all threads. libcap offers "libpsx", which enables similar synchronization of capability changes.
+
+``pyprctl``, however, makes **no attempt** to synchronize any changes it makes to a thread's UIDs/GIDs/capabilities. In fact, when changing UIDs/GIDs it deliberately works around glibc/musl's UID/GID synchronization. If you use ``pyprctl``'s capability manipulation functions in multithreaded programs, you are responsible for synchronizing any changes across threads (if this is necessary to properly secure your application).
+
+(Note: ``python-prctl`` doesn't link against libpsx, so it behaves the same way! It just doesn't document this.)
+
+Platform support
+================
+
+Architecture support
+--------------------
+
+``pyprctl`` should work on at least the following architectures (both 32-bit and 64-bit versions): x86, ARM, RISC-V, SPARC, and PowerPC. However, it has only been tested on x86_64 and 32-bit ARM.
+
+musl libc
+---------
+
+``pyprctl`` *should* work on systems using musl libc. It's been tested on Alpine Linux and on the musl-based distribution of Void Linux.
+
+Statically linked systems
+-------------------------
+
+``pyprctl`` *might* work on statically linked systems, but this has not been tested.
+
+API documentation
+=================
 
 .. automodule:: pyprctl
    :members:
