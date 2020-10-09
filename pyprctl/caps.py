@@ -85,9 +85,6 @@ class Cap(enum.Enum):
     # Note: When adding capabilities to this list, make sure to add type annotations to the
     # _CapabilitySet class below.
 
-    def _to_name(self) -> str:
-        return "cap_" + self.name.lower()  # pylint: disable=no-member
-
     @classmethod
     def from_name(cls, name: str) -> "Cap":
         """Look up a capability by name.
@@ -458,8 +455,7 @@ def _capstate_to_text(*, effective: Set[Cap], inheritable: Set[Cap], permitted: 
             return ""
 
         return ",".join(
-            cap._to_name()  # pylint: disable=protected-access
-            for cap in sorted(caps, key=lambda cap: cap.value)
+            "cap_" + cap.name.lower() for cap in sorted(caps, key=lambda cap: cap.value)
         )
 
     # These are the capabilities that need to be added.
