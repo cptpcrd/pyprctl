@@ -459,13 +459,17 @@ def _capstate_to_text(*, effective: Set[Cap], inheritable: Set[Cap], permitted: 
     if not effective and not inheritable and not permitted:
         return "="
 
-    def cap_set_to_text(caps: Set[Cap]) -> str:
+    def cap_set_to_text(caps: Set[Cap], prefix_ch: str) -> str:
         if caps == _ALL_CAPS_SET:
-            return ""
+            return "" if prefix_ch == "=" else "all"
 
         return ",".join(
             "cap_" + cap.name.lower() for cap in sorted(caps, key=lambda cap: cap.value)
         )
+
+    orig_effective = effective
+    orig_inheritable = inheritable
+    orig_permitted = permitted
 
     # These are the capabilities that need to be added.
     effective = set(effective)
@@ -505,7 +509,7 @@ def _capstate_to_text(*, effective: Set[Cap], inheritable: Set[Cap], permitted: 
             prefix_ch = "+"
 
         parts.append(
-            cap_set_to_text(caps)
+            cap_set_to_text(caps, prefix_ch)
             + prefix_ch
             + ("e" if eff else "")
             + ("i" if inh else "")
@@ -523,17 +527,17 @@ def _capstate_to_text(*, effective: Set[Cap], inheritable: Set[Cap], permitted: 
 
         else:
             if eff:
-                # If there were any capabilities in "caps" that aren't in "effective",
+                # If there were any capabilities in "caps" that aren't in "orig_effective",
                 # then those were extraneous and we need to remove them later.
-                drop_effective.update(caps - effective)
+                drop_effective.update(caps - orig_effective)
                 # All of the capabilities in "caps" have been added; we don't need to
                 # keep track of them in "effective" any more.
                 effective.difference_update(caps)
             if inh:
-                drop_inheritable.update(caps - inheritable)
+                drop_inheritable.update(caps - orig_inheritable)
                 inheritable.difference_update(caps)
             if perm:
-                drop_permitted.update(caps - permitted)
+                drop_permitted.update(caps - orig_permitted)
                 permitted.difference_update(caps)
 
     # First, add the ones that are common to all 3 sets.
