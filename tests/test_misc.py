@@ -38,6 +38,12 @@ def test_pdeathsig_toggle() -> None:
     pyprctl.set_pdeathsig(signal.SIGURG)
     assert pyprctl.get_pdeathsig() == signal.SIGURG
 
+    pyprctl.set_pdeathsig(signal.SIGRTMIN + 1)
+    assert pyprctl.get_pdeathsig() == signal.SIGRTMIN + 1
+
+    pyprctl.set_pdeathsig(None)
+    assert pyprctl.get_pdeathsig() is None
+
 
 @restore_old_value(pyprctl.get_timerslack, pyprctl.set_timerslack)
 def test_timerslack_toggle() -> None:

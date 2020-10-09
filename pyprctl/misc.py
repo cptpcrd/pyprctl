@@ -1,5 +1,6 @@
 import ctypes
 import enum
+import signal
 from typing import Callable, Union
 
 from . import ffi
@@ -145,8 +146,21 @@ def get_name() -> str:
     return name.value.decode()
 
 
-set_pdeathsig = _make_integer_setter(ffi.PR_SET_PDEATHSIG)
-get_pdeathsig = _make_ptr_integer_getter(ffi.PR_GET_PDEATHSIG)
+def set_pdeathsig(sig: Union[signal.Signals, int, None]) -> None:  # pylint: disable=no-member
+    ffi.prctl(ffi.PR_SET_PDEATHSIG, sig or 0, 0, 0, 0)
+
+
+def get_pdeathsig() -> Union[signal.Signals, int, None]:  # pylint: disable=no-member
+    sig = ctypes.c_int()
+    ffi.prctl(ffi.PR_GET_PDEATHSIG, sig, 0, 0, 0)
+
+    if sig.value == 0:
+        return None
+
+    try:
+        return signal.Signals(sig.value)  # pylint: disable=no-member
+    except ValueError:
+        return sig.value
 
 
 def set_seccomp_mode_strict() -> None:
