@@ -64,7 +64,19 @@ def _make_res_integer_getter(option: int) -> Callable[[], int]:
 
 
 set_child_subreaper = _make_bool_setter(ffi.PR_SET_CHILD_SUBREAPER)
+set_child_subreaper.__doc__ = """
+Set the "child subreaper" attribute on the current process.
+
+When a process dies, its children are reparented to the nearest ancestor with the "child subreaper"
+attribute set.
+"""
+
 get_child_subreaper = _make_ptr_bool_getter(ffi.PR_GET_CHILD_SUBREAPER)
+set_child_subreaper.__doc__ = """
+Get the "child subreaper" attribute of the current process.
+
+See ``set_child_subreaper()``.
+"""
 
 set_dumpable = _make_bool_setter(ffi.PR_SET_DUMPABLE)
 set_dumpable.__doc__ = """
@@ -93,6 +105,11 @@ information.
 """
 
 get_keepcaps = _make_res_bool_getter(ffi.PR_GET_KEEPCAPS)
+get_keepcaps.__doc__ = """
+Get the "keep capabilities" flag on the current process.
+
+See ``set_keepcaps()``.
+"""
 
 
 def set_mce_kill(policy: MCEKillPolicy) -> None:
@@ -147,10 +164,30 @@ def get_name() -> str:
 
 
 def set_pdeathsig(sig: Union[signal.Signals, int, None]) -> None:  # pylint: disable=no-member
+    """
+    Set the parent-death signal of the current process.
+
+    If ``sig`` is 0 or ``None``, the parent-death signal is cleared. Otherwise, ``sig`` specifies
+    a signal that will be sent to the current process
+
+    This flag is is cleared in the following cases:
+    1. In children of a ``fork()``.
+    2. When ``exec()``-ing a binary that is setuid, setgid, or has file capabilities.
+    3. When the effective UID, effective GID, filesystem UID, or filesystem GID is changed.
+
+    See prctl(2) for more details.
+    """
     ffi.prctl(ffi.PR_SET_PDEATHSIG, sig or 0, 0, 0, 0)
 
 
 def get_pdeathsig() -> Union[signal.Signals, int, None]:  # pylint: disable=no-member
+    """
+    Get the parent-death signal of the current process (see ``set_pdeathsig()`` for details).
+
+    If the parent-death signal is cleared, this function returns ``None``. Otherwise, it returns a
+    ``signal.Signals`` object.
+    """
+
     sig = ctypes.c_int()
     ffi.prctl(ffi.PR_GET_PDEATHSIG, sig, 0, 0, 0)
 
@@ -169,7 +206,7 @@ def set_seccomp_mode_strict() -> None:
 
     After this function is is called, the only syscalls that can be made are ``read()``,
     ``write()``, ``sigreturn()``, and ``_exit()``. Making any other syscall will result in SIGKILL
-    being sent to the process.
+    being sent to the thread.
 
     Note: ``sys.exit()`` and ``os._exit()`` will call the ``exit_group()`` syscall, not ``_exit()``.
     ``pyprctl`` exposes a function :py:func:`_sys_exit()` that calls the ``_exit()`` syscall
