@@ -113,6 +113,7 @@ class FileCaps:
     def get_for_file(
         cls,
         path: Union[int, str, bytes, "os.PathLike[str]", "os.PathLike[bytes]"],
+        *,
         follow_symlinks: bool = True,
     ) -> "FileCaps":
         """
@@ -127,6 +128,7 @@ class FileCaps:
     def set_for_file(
         self,
         path: Union[int, str, bytes, "os.PathLike[str]", "os.PathLike[bytes]"],
+        *,
         follow_symlinks: bool = True,
     ) -> None:
         """
@@ -140,6 +142,7 @@ class FileCaps:
     def remove_for_file(
         cls,
         path: Union[int, str, bytes, "os.PathLike[str]", "os.PathLike[bytes]"],
+        *,
         follow_symlinks: bool = True,
     ) -> None:
         """
