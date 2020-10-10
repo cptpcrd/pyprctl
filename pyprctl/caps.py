@@ -846,6 +846,9 @@ def cap_set_ids(
                     )
                 )
 
+    if uid is None and gid is None and groups is None:
+        raise ValueError("One of 'uid', 'gid', or 'groups' must be passed")
+
     capstate = CapState.get_current()
 
     # Save the original effective capability set for future reference.
