@@ -35,7 +35,7 @@ class FileCaps:
     inheritable: Set[Cap]
     #: For version 3 capability sets, this represents the root user ID of the user namespace in
     #: which the file capability extended attribute was created.
-    rootid: Optional[int]
+    rootid: Optional[int] = None
 
     @classmethod
     def _from_data(cls, data: bytes) -> "FileCaps":
