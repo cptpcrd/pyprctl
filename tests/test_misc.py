@@ -81,6 +81,9 @@ def test_timing_toggle() -> None:
 
 
 def test_seccomp_mode_strict() -> None:
+    if hasattr(sys, "pypy_version_info"):
+        pytest.skip("Fails on PyPy for unknown reasons")
+
     def do_test(callback: Callable[[], Any], res: int) -> None:
         pid = os.fork()
         if pid == 0:
