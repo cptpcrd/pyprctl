@@ -99,11 +99,13 @@ else:
 
 
 def sys_setresuid(ruid: int, euid: int, suid: int) -> None:
-    libc.syscall(_SYS_SETRESUID, ruid, euid, suid)
+    if libc.syscall(_SYS_SETRESUID, ruid, euid, suid) < 0:
+        raise build_oserror(ctypes.get_errno())
 
 
 def sys_setresgid(rgid: int, egid: int, sgid: int) -> None:
-    libc.syscall(_SYS_SETRESGID, rgid, egid, sgid)
+    if libc.syscall(_SYS_SETRESGID, rgid, egid, sgid) < 0:
+        raise build_oserror(ctypes.get_errno())
 
 
 def sys_exit(res: int) -> None:
