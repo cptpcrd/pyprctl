@@ -399,10 +399,12 @@ def _capstate_from_text(text: str) -> Tuple[Set[Cap], Set[Cap], Set[Cap]]:
     permitted: Set[Cap] = set()
 
     for clause in text.split():
-        if not any(ch in clause for ch in "=+-"):
+        match = re.search(r"[-+=]", clause)
+        if match is None:
             raise ValueError("Invalid capability set clause")
 
-        cap_names, action_spec = re.split(r"(?=[-+=])", clause, maxsplit=1)
+        cap_names = clause[: match.start()]
+        action_spec = clause[match.start():]
 
         caps = (
             list(Cap)
