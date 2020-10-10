@@ -2,7 +2,6 @@ import os
 import signal
 import subprocess
 import sys
-import time
 from typing import Any, Callable
 
 import pytest
@@ -97,12 +96,12 @@ def test_seccomp_mode_strict() -> None:
     # Sanity check
     do_test(lambda: None, 0)
 
-    # We can read() and write() datab
+    # We can read() and write() data
     r_fd, w_fd = os.pipe()
     do_test(lambda: [os.write(w_fd, b"a"), os.read(r_fd, 1)], 0)
 
     # But nothing else
-    do_test(lambda: time.sleep(1), -signal.SIGKILL)
+    do_test(os.getpid, -signal.SIGKILL)
 
 
 @restore_old_value(pyprctl.get_child_subreaper, pyprctl.set_child_subreaper)
