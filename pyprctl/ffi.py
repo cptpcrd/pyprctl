@@ -1,35 +1,10 @@
 import ctypes
 import ctypes.util
 import os
-import sys
 from typing import Union, cast
 
 _libc_path = ctypes.util.find_library("c")
-
-if _libc_path is None:
-    # If we couldn't find a libc, we may be able to load sys.executable. This looks weird, but it
-    # actually seems to work on systems using musl libc. Maybe it will work on statically linked
-    # systems too?
-
-    if not sys.executable:
-        raise RuntimeError(
-            "Could not find libc (is your system statically linked? are you in a chroot?) "
-            "and sys.executable is not set"
-        )
-
-    _libc_path = sys.executable
-
-try:
-    libc = ctypes.CDLL(_libc_path, use_errno=True)
-except OSError as ex:
-    if _libc_path == sys.executable:
-        raise RuntimeError(
-            "Could not find libc, and encountered an error trying to load the Python "
-            "executable as a shared library (are you in a chroot?): {}".format(ex)
-        ) from ex
-    else:
-        raise RuntimeError("Error loading libc at {}: {}".format(_libc_path, ex)) from ex
-
+libc = ctypes.CDLL(_libc_path, use_errno=True)
 
 libc.prctl.argtypes = (ctypes.c_int, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong)
 libc.prctl.restype = ctypes.c_int
