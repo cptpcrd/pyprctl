@@ -34,7 +34,8 @@ class FileCaps:
     #: the resulting capabilities are added to the thread's permitted set.
     inheritable: Set[Cap]
     #: For version 3 capability sets, this represents the root user ID of the user namespace in
-    #: which the file capability extended attribute was created.
+    #: which the file capability extended attribute was created. See capabilities(7) for more
+    #: details.
     rootid: Optional[int] = None
 
     @classmethod
@@ -162,7 +163,7 @@ class FileCaps:
 
         Note that this method will raise an error if the specified "effective" set is not empty
         and is also different from the "permitted" set. This is because Linux file capabilities
-        only has a single bit for specifying the "effective" permissions, which indicates whether
+        only have a single bit for specifying the "effective" permissions, which indicates whether
         or not the permitted set should be copied to the effective set.
         """
 

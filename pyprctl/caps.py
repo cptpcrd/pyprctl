@@ -91,8 +91,8 @@ class Cap(enum.Enum):
         """Look up a capability by name.
 
         Roughly equivalent to ``cap_from_name()`` in libcap. Names are matched case-insensitively,
-        but they must include a "cap_" prefix (also case-insensitive; "CAP_" and "Cap_" are valid
-        too).
+        but they must include a ``cap_`` prefix (also case-insensitive; ``CAP_`` and ``Cap_`` are
+        valid too).
 
         """
 
@@ -802,9 +802,13 @@ def cap_set_ids(
     This combines the functionality of ``libcap``'s ``cap_setuid()`` and ``cap_setgroups()``, while
     also providing greater flexibility.
 
+    Note: This function only operates on the current thread, not the process as a whole. This is
+    because of the way Linux operates. If you call this function from a multithreaded program, you
+    are responsible for synchronizing changes across threads to ensure proper security.
+
     This function performs the following actions in order. (Note: If ``gid`` is not ``None`` or
-    ``groups`` is not ``None``, CAP_SETGID will first be raised, and if ``uid`` is not ``None`` then
-    CAP_SETUID will be raised.)
+    ``groups`` is not ``None``, CAP_SETGID will first be raised in the thread's effective set, and
+    if ``uid`` is not ``None`` then CAP_SETUID will be raised.)
 
     - If ``gid`` is not ``None``, the thread's real, effective and saved GIDs will be set to
       ``gid``.
@@ -815,10 +819,6 @@ def cap_set_ids(
     - If ``preserve_effective_caps`` is ``True``, after this is done, the effective capability set
       will be restored to its original contents. By default, this function mimics ``libcap`` and
       empties the effective capability set before returning.
-
-    Note: Yes, this function only operates on the current thread, not the process as a whole. This
-    is because of the way Linux operates. If you call this function from a multithreaded program,
-    you are responsible for synchronizing changes across threads to ensure proper security.
 
     Note: If an error occurs while this function is attempting to change the thread's
     UID/GID/supplementary groups, this function will still attempt to set the effective capability

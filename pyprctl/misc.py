@@ -125,7 +125,8 @@ def set_no_new_privs() -> None:
     Set the no-new-privileges flag on the current thread.
 
     Once this flag is set, it cannot be unset. This flag guarantees that in this thread and in all
-    if its children, no ``exec()`` call can ever result in elevated privileges.
+    of its children, no ``exec()`` call can ever result in elevated privileges. See prctl(2) for
+    more information.
 
     """
     ffi.prctl(ffi.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)
@@ -168,9 +169,10 @@ def set_pdeathsig(sig: Union[signal.Signals, int, None]) -> None:  # pylint: dis
     Set the parent-death signal of the current process.
 
     If ``sig`` is 0 or ``None``, the parent-death signal is cleared. Otherwise, ``sig`` specifies
-    a signal that will be sent to the current process
+    the signal that will be sent to the current process when its parent dies.
 
     This flag is is cleared in the following cases:
+
     1. In children of a ``fork()``.
     2. When ``exec()``-ing a binary that is setuid, setgid, or has file capabilities.
     3. When the effective UID, effective GID, filesystem UID, or filesystem GID is changed.
