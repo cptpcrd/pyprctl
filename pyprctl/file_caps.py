@@ -44,8 +44,10 @@ class FileCaps:
 
         magic = struct.unpack("<I", data[:4])[0]
 
-        effective = bool(magic & ffi.VFS_CAP_FLAGS_EFFECTIVE)
-        version = (magic - ffi.VFS_CAP_FLAGS_EFFECTIVE) if effective else magic
+        version = magic & ffi.VFS_CAP_REVISION_MASK
+
+        flags = magic & ffi.VFS_CAP_FLAGS_MASK
+        effective = bool(flags & ffi.VFS_CAP_FLAGS_EFFECTIVE)
 
         rootid = None
 
