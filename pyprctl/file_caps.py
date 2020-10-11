@@ -21,7 +21,7 @@ class FileCaps:
     """
 
     #: If this is ``True``, it indicates a "capability-dumb" binary. When this program is executed,
-    #: all capabilities defined in the file's permitted set will also be copied to the thread's
+    #: all capabilities in the new process's permitted set will also be copied to the process's
     #: effective set.
     #:
     #: In addition, if a binary has this bit set, the kernel will refuse to launch it if the new
