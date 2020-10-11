@@ -81,7 +81,11 @@ In addition to :py:class:`CapState` and the ambient/bounding set manipulation fu
 
    The bounding capability set.
 
-These set objects have boolean properties corresponding to each of the capabilities listed for :py:class:`Cap` (except with lowercase names, for example ``chown``, ``sys_chroot``, etc.). Accessing any of these properties will check whether that capability is present in the given set, assigning ``True`` to any of these properties will raise them in the given set (if possible), and assigning ``False`` to any of these properties will lower them in the given set.
+These set objects have boolean properties corresponding to each of the capabilities listed for :py:class:`Cap` (except with lowercase names, for example ``chown``, ``sys_chroot``, etc.). Accessing any of these properties will check whether that capability is present in the given set, assigning ``True`` to any of these properties will raise them in the given set (if possible), and assigning ``False`` to any of these properties will lower them in the given set. For example::
+
+    pyprctl.cap_effective.chown = True
+    print(pyprctl.cap_effective.chown)
+    pyprctl.cap_effective.chown = False
 
 The sets also have a few helper methods:
 
