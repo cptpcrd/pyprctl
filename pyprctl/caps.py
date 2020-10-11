@@ -837,11 +837,9 @@ def cap_set_ids(
       will be restored to its original contents. By default, this function mimics ``libcap`` and
       empties the effective capability set before returning.
 
-    Note: If an error occurs while this function is attempting to change the thread's
-    UID/GID/supplementary groups, this function will still attempt to set the effective capability
-    set as specified by ``preserve_effective_caps``. However, this may fail. Programs that plan on
-    performing further actions if this function returns an error should first check the thread's
-    capability set and ensure that the correct capabilities are raised/lowered.
+    Note: If this function fails and raises an ``OSError``, the thread's UIDs, GIDs, supplementary
+    groups, and capability sets are in an unknown and possibly inconsistent state. This is EXTREMELY
+    DANGEROUS! If you are unable to revert the changes, abort as soon as possible.
     """
 
     # We do type checks up front to avoid errors in the middle of changing the UIDs/GIDs.
