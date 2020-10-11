@@ -31,6 +31,25 @@ def test_ambient_supported() -> None:
     assert pyprctl.cap_ambient_supported()
 
 
+def test_supported_caps() -> None:
+    supported_caps = pyprctl.Cap.probe_supported()
+
+    for cap in supported_caps:
+        assert pyprctl.capbset_read(cap) is not None
+        assert pyprctl.cap_ambient_is_set(cap) is not None
+
+    capstates = [pyprctl.CapState.get_current(), pyprctl.CapState.get_for_pid(0)]
+
+    for cap in set(pyprctl.Cap) - supported_caps:
+        assert pyprctl.capbset_read(cap) is None
+        assert pyprctl.cap_ambient_is_set(cap) is None
+
+        for capstate in capstates:
+            assert cap not in capstate.effective
+            assert cap not in capstate.inheritable
+            assert cap not in capstate.permitted
+
+
 def test_ambient_probe() -> None:
     pyprctl.cap_ambient_probe()
 
