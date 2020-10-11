@@ -106,6 +106,19 @@ class Cap(enum.Enum):
 
         raise ValueError("Unknown capability {!r}".format(name))
 
+    def is_supported(self) -> bool:
+        """
+        Returns whether the running kernel supports this capability.
+        """
+        return capbset_read(self) is not None
+
+    @classmethod
+    def probe_supported(cls) -> Set["Cap"]:
+        """
+        Returns the set of capabilities supported by the running kernel.
+        """
+        return {cap for cap in cls if cap.is_supported()}
+
 
 _LAST_CAP = max(Cap, key=lambda cap: cap.value)  # type: ignore
 _ALL_CAPS_SET = set(Cap)
