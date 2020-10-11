@@ -6,7 +6,7 @@ import errno
 import os
 import re
 import warnings
-from typing import Callable, Iterable, Iterator, List, Optional, Set, Tuple, cast
+from typing import Callable, Iterable, Iterator, List, Optional, Set, Tuple, Union, cast
 
 from . import ffi
 from .misc import get_keepcaps, set_keepcaps
@@ -808,8 +808,8 @@ def cap_ambient_probe() -> Set[Cap]:
 
 def cap_set_ids(
     *,
-    uid: Optional[int] = None,
-    gid: Optional[int] = None,
+    uid: Union[None, int, Tuple[int, int, int], Tuple[int, int, int, int]] = None,
+    gid: Union[None, int, Tuple[int, int, int], Tuple[int, int, int, int]] = None,
     groups: Optional[Iterable[int]] = None,
     preserve_effective_caps: bool = False,
 ) -> None:
@@ -837,34 +837,53 @@ def cap_set_ids(
       will be restored to its original contents. By default, this function mimics ``libcap`` and
       empties the effective capability set before returning.
 
-    Note: If an error occurs while this function is attempting to change the thread's
-    UID/GID/supplementary groups, this function will still attempt to set the effective capability
-    set as specified by ``preserve_effective_caps``. However, this may fail. Programs that plan on
-    performing further actions if this function returns an error should first check the thread's
-    capability set and ensure that the correct capabilities are raised/lowered.
+    Note: If this function fails and raises an ``OSError``, the thread's UIDs, GIDs, supplementary
+    groups, and capability sets are in an unknown and possibly inconsistent state. This is EXTREMELY
+    DANGEROUS! If you are unable to revert the changes, abort as soon as possible.
     """
-
-    # We do type checks up front to avoid errors in the middle of changing the UIDs/GIDs.
-
-    if uid is not None and not isinstance(uid, int):
-        raise TypeError("Invalid type {!r} for 'uid' argument".format(uid.__class__.__name__))
-
-    if gid is not None and not isinstance(gid, int):
-        raise TypeError("Invalid type {!r} for 'gid' argument".format(gid.__class__.__name__))
-
-    if groups is not None:
-        groups = list(groups)
-
-        for supp_gid in groups:
-            if not isinstance(supp_gid, int):
-                raise TypeError(
-                    "Invalid type {!r} for value in 'groups' list".format(
-                        supp_gid.__class__.__name__
-                    )
-                )
 
     if uid is None and gid is None and groups is None:
         raise ValueError("One of 'uid', 'gid', or 'groups' must be passed")
+
+    # We do type checks up front to avoid errors in the middle of changing the UIDs/GIDs.
+
+    def check_all_ints(vals: Iterable[int], argname: str) -> None:
+        for val in vals:
+            if not isinstance(val, int):
+                raise TypeError(
+                    "Invalid type {!r} for value in {}".format(val.__class__.__name__, argname)
+                )
+
+    def parse_ids(
+        ids: Union[None, int, Tuple[int, int, int], Tuple[int, int, int, int]],
+        argname: str,
+    ) -> Tuple[Optional[Tuple[int, int, int]], Optional[int]]:
+        if ids is None:
+            return None, None
+
+        elif isinstance(ids, int):
+            res = (ids, ids, ids)
+            check_all_ints(res, argname)
+            return res, None
+
+        elif isinstance(ids, tuple):
+            if len(ids) not in (3, 4):
+                raise ValueError("{!r} argument is incorrect length".format(argname))
+
+            check_all_ints(ids, argname)
+            return ids[:3], (ids[3] if len(ids) == 4 else None)  # type: ignore
+
+        else:
+            raise TypeError(
+                "Invalid type {!r} for {!r} argument".format(uid.__class__.__name__, argname)
+            )
+
+    uids, fsuid = parse_ids(uid, "uid")
+    gids, fsgid = parse_ids(gid, "gid")
+
+    if groups is not None:
+        groups = list(groups)
+        check_all_ints(groups, "groups")
 
     capstate = CapState.get_current()
 
@@ -872,9 +891,9 @@ def cap_set_ids(
     orig_effective = capstate.effective.copy()
 
     # Add the correct capabilities
-    if gid is not None or groups is not None:
+    if gids is not None or groups is not None:
         capstate.effective.add(Cap.SETGID)
-    if uid is not None:
+    if uids is not None:
         capstate.effective.add(Cap.SETUID)
 
     # Don't call capset() if we already had those capabilities
@@ -888,14 +907,20 @@ def cap_set_ids(
         try:
             # Now actually set the UIDs/GIDs
 
-            if gid is not None:
-                ffi.sys_setresgid(gid, gid, gid)
+            if gids is not None:
+                if fsgid is not None:
+                    ffi.setfsgid_safe(fsgid)
+
+                ffi.sys_setresgid(*gids)
 
             if groups is not None:
                 os.setgroups(groups)
 
-            if uid is not None:
-                ffi.sys_setresuid(uid, uid, uid)
+            if uids is not None:
+                if fsuid is not None:
+                    ffi.setfsuid_safe(fsuid)
+
+                ffi.sys_setresuid(*uids)
 
         finally:
             set_keepcaps(orig_keepcaps)

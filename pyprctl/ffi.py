@@ -12,6 +12,11 @@ libc.prctl.restype = ctypes.c_int
 libc.syscall.argtypes = (ctypes.c_long,)
 libc.syscall.restype = ctypes.c_long
 
+libc.setfsuid.argtypes = (ctypes.c_uint32,)
+libc.setfsuid.restype = ctypes.c_uint
+libc.setfsgid.argtypes = (ctypes.c_uint32,)
+libc.setfsgid.restype = ctypes.c_uint
+
 
 def build_oserror(
     eno: int,
@@ -116,6 +121,18 @@ def sys_exit(res: int) -> None:
     libc.syscall(_SYS_EXIT, res)
 
     assert False, "If we got here, something is very wrong"
+
+
+def setfsuid_safe(uid: int) -> None:
+    libc.setfsuid(uid)
+    if libc.setfsuid(-1) != uid:
+        raise PermissionError
+
+
+def setfsgid_safe(gid: int) -> None:
+    libc.setfsgid(gid)
+    if libc.setfsgid(-1) != gid:
+        raise PermissionError
 
 
 PR_SET_PDEATHSIG = 1
