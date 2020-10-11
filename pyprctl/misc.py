@@ -72,7 +72,7 @@ attribute set.
 """
 
 get_child_subreaper = _make_ptr_bool_getter(ffi.PR_GET_CHILD_SUBREAPER)
-set_child_subreaper.__doc__ = """
+get_child_subreaper.__doc__ = """
 Get the "child subreaper" attribute of the current process.
 
 See ``set_child_subreaper()``.
