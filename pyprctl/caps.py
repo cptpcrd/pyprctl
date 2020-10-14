@@ -360,6 +360,9 @@ class CapState:
         """
         Set the capability state of the current thread to the capability set represented by this
         object.
+
+        Note: If the capability sets stored in this object contain capabilities that the running
+        kernel does not support, the kernel will silently ignore them!
         """
 
         header = _CapUserHeader(
@@ -769,6 +772,8 @@ def capbset_drop(cap: Cap) -> None:
     Remove the given capability from the current thread's bounding capability set.
 
     (This requires the CAP_SETPCAP capability.)
+
+    This function will fail with ``EINVAL`` if the kernel does not support the specified capability.
     """
     ffi.prctl(ffi.PR_CAPBSET_DROP, cap.value, 0, 0, 0)
 
@@ -787,6 +792,8 @@ def cap_ambient_raise(cap: Cap) -> None:
 
     (The capability must already be present in the thread's permitted set and and the thread's
     inheritable set, and the SECBIT_NO_CAP_AMBIENT_RAISE securebit must not be set.)
+
+    This function will fail with ``EINVAL`` if the kernel does not support the specified capability.
     """
     ffi.prctl(ffi.PR_CAP_AMBIENT, ffi.PR_CAP_AMBIENT_RAISE, cap.value, 0, 0)
 
@@ -794,6 +801,8 @@ def cap_ambient_raise(cap: Cap) -> None:
 def cap_ambient_lower(cap: Cap) -> None:
     """
     Lower the given capability in the current thread's ambient set.
+
+    This function will fail with ``EINVAL`` if the kernel does not support the specified capability.
     """
     ffi.prctl(ffi.PR_CAP_AMBIENT, ffi.PR_CAP_AMBIENT_LOWER, cap.value, 0, 0)
 
