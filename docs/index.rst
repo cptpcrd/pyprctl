@@ -101,6 +101,16 @@ The sets also have a few helper methods:
 
    Drop all capabilities except the given ones from this set.
 
+.. py:method:: set.replace(\*caps)
+
+   "Replace" this capability set with the given capabilities. This is equivalent to the following::
+
+       if caps:
+           set.add(*caps)
+       set.limit(*caps)
+
+   However, it may be more efficient.
+
 .. py:method:: set.clear()
 
    Remove all capabilities from this set. This is equivalent to ``set.limit()`` (i.e. with no arguments), but it is easier to understand.

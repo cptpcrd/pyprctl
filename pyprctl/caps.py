@@ -235,6 +235,36 @@ class _CapabilitySet:
         else:
             self.drop(*Cap)
 
+    def replace(self, *caps: Cap) -> None:
+        if not caps:
+            self.clear()
+            return
+
+        if self._name == "bounding":
+            for cap in Cap:
+                is_raised = capbset_read(cap)
+                want_raised = cap in caps
+
+                if want_raised and not is_raised:
+                    raise ValueError("Cannot add bounding capabilities")
+                elif is_raised and not want_raised:
+                    capbset_drop(cap)
+
+        elif self._name == "ambient":
+            for cap in Cap:
+                is_raised = cap_ambient_is_set(cap)
+                want_raised = cap in caps
+
+                if want_raised and not is_raised:
+                    cap_ambient_raise(cap)
+                elif is_raised and not want_raised:
+                    cap_ambient_lower(cap)
+
+        else:
+            state = CapState.get_current()
+            setattr(state, self._name, caps)
+            state.set_current()
+
     def __repr__(self) -> str:
         return "<{} capability set: {}>".format(self._name.title(), self)
 
