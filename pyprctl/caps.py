@@ -178,11 +178,13 @@ class _CapabilitySet:
     def drop(self, *drop_caps: Cap) -> None:
         if self._name == "bounding":
             for cap in drop_caps:
-                capbset_drop(cap)
+                if capbset_read(cap):
+                    capbset_drop(cap)
 
         elif self._name == "ambient":
             for cap in drop_caps:
-                cap_ambient_lower(cap)
+                if cap_ambient_is_set(cap):
+                    cap_ambient_lower(cap)
 
         else:
             state = CapState.get_current()
