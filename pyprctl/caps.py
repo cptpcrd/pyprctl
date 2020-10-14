@@ -227,7 +227,7 @@ class _CapabilitySet:
         if not limit_caps:
             self.clear()
         else:
-            self.drop(*(set(Cap) - set(limit_caps)))
+            self.drop(*(_ALL_CAPS_SET - set(limit_caps)))
 
     def clear(self) -> None:
         if self._name == "ambient":
