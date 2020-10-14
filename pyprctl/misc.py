@@ -187,7 +187,7 @@ def get_pdeathsig() -> Union[signal.Signals, int, None]:  # pylint: disable=no-m
     Get the parent-death signal of the current process (see ``set_pdeathsig()`` for details).
 
     If the parent-death signal is cleared, this function returns ``None``. Otherwise, it returns a
-    ``signal.Signals`` object.
+    ``signal.Signals`` object (or an ``int`` if the value is not in ``signal.Signals``).
     """
 
     sig = ctypes.c_int()
