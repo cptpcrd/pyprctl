@@ -59,6 +59,14 @@ Capability set objects
 
    If efficiency is important for your application, make sure to take this into account.
 
+.. warning::
+   This interface provides methods of performing "bulk" operations on the ambient/bounding sets, but these operations are not performed atomically!
+
+   As a result, if the "bulk" methods operating on the ambient/bounding sets fail, these sets will be left in an inconsistent state.
+
+   For example, if the current thread's permitted and inheritable capability sets have CAP_CHOWN but not CAP_SYS_CHROOT, ``cap_ambient.add(Cap.CHOWN, Cap.SYS_CHROOT)`` will successfully add CAP_CHOWN, but it will fail when trying to add CAP_SYS_CHROOT.
+   It will NOT make any attempt to revert these changes, so the thread will still have CAP_CHOWN raised after the function exits.
+
 In addition to :py:class:`CapState` and the ambient/bounding set manipulation functions, ``pyprctl`` provides five objects that provide alternate ways of interacting with the capability sets:
 
 .. py:attribute:: cap_permitted
