@@ -1,7 +1,9 @@
 import ctypes
 import ctypes.util
 import os
-from typing import Union, cast
+from typing import Collection, Union, cast
+
+gid_t = ctypes.c_uint32
 
 _libc_path = ctypes.util.find_library("c")
 libc = ctypes.CDLL(_libc_path, use_errno=True)
@@ -61,38 +63,47 @@ _machine = os.uname().machine
 if _machine == "x86_64":
     _SYS_SETRESUID = 117
     _SYS_SETRESGID = 119
+    _SYS_SETGROUPS = 116
     _SYS_EXIT = 60
 elif _machine.startswith("aarch64"):
     _SYS_SETRESUID = 147
     _SYS_SETRESGID = 149
+    _SYS_SETGROUPS = 159
     _SYS_EXIT = 93
 elif _machine.startswith("arm"):
     _SYS_SETRESUID = 208
     _SYS_SETRESGID = 210
+    _SYS_SETGROUPS = 206
     _SYS_EXIT = 1
 elif _machine in ("i386", "i486", "i586", "i686"):
     _SYS_SETRESUID = 208
     _SYS_SETRESGID = 210
+    _SYS_SETGROUPS = 206
     _SYS_EXIT = 1
 elif _machine.startswith("riscv"):
     _SYS_SETRESUID = 147
     _SYS_SETRESGID = 149
+    _SYS_SETGROUPS = 159
     _SYS_EXIT = 93
 elif _machine.startswith("sparc"):
     _SYS_SETRESUID = 108
     _SYS_SETRESGID = 110
+    _SYS_SETGROUPS = 80 if sys.maxsize > 2 ** 32 else 82
     _SYS_EXIT = 1
 elif _machine.startswith("ppc"):
     _SYS_SETRESUID = 164
     _SYS_SETRESGID = 169
+    _SYS_SETGROUPS = 81
     _SYS_EXIT = 1
 elif _machine.startswith("s390"):
     _SYS_SETRESUID = 208
     _SYS_SETRESGID = 210
+    _SYS_SETGROUPS = 206
     _SYS_EXIT = 1
 elif _machine == "sh":
     _SYS_SETRESUID = 164
     _SYS_SETRESGID = 170
+    _SYS_SETGROUPS = 206
     _SYS_EXIT = 1
 else:
     raise RuntimeError("Unsupported platform")
@@ -105,6 +116,12 @@ def sys_setresuid(ruid: int, euid: int, suid: int) -> None:
 
 def sys_setresgid(rgid: int, egid: int, sgid: int) -> None:
     if libc.syscall(_SYS_SETRESGID, rgid, egid, sgid) < 0:
+        raise build_oserror(ctypes.get_errno())
+
+
+def sys_setgroups(groups: Collection[int]) -> None:
+    c_groups = (gid_t * len(groups))(*groups)
+    if libc.syscall(_SYS_SETGROUPS, len(groups), c_groups) < 0:
         raise build_oserror(ctypes.get_errno())
 
 

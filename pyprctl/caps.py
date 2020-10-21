@@ -931,7 +931,7 @@ def cap_set_ids(
                 ffi.sys_setresgid(gid, gid, gid)
 
             if groups is not None:
-                os.setgroups(groups)
+                ffi.sys_setgroups(groups)
 
             if uid is not None:
                 ffi.sys_setresuid(uid, uid, uid)
