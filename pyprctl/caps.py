@@ -3,7 +3,6 @@ import ctypes
 import dataclasses
 import enum
 import errno
-import os
 import re
 import warnings
 from typing import Callable, Iterable, Iterator, List, Optional, Set, Tuple, cast

@@ -1,9 +1,10 @@
 import ctypes
 import ctypes.util
 import os
+import sys
 from typing import Collection, Union, cast
 
-gid_t = ctypes.c_uint32
+gid_t = ctypes.c_uint32  # pylint: disable=invalid-name
 
 _libc_path = ctypes.util.find_library("c")
 libc = ctypes.CDLL(_libc_path, use_errno=True)
@@ -120,7 +121,7 @@ def sys_setresgid(rgid: int, egid: int, sgid: int) -> None:
 
 
 def sys_setgroups(groups: Collection[int]) -> None:
-    c_groups = (gid_t * len(groups))(*groups)
+    c_groups = (gid_t * len(groups))(*groups)  # pytype: disable=not-callable
     if libc.syscall(_SYS_SETGROUPS, len(groups), c_groups) < 0:
         raise build_oserror(ctypes.get_errno())
 
