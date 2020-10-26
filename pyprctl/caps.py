@@ -4,6 +4,7 @@ import dataclasses
 import enum
 import errno
 import re
+import string
 import warnings
 from typing import Callable, Iterable, Iterator, List, Optional, Set, Tuple, cast
 
@@ -97,7 +98,11 @@ class Cap(enum.Enum):
 
         upper_name = name.upper()
 
-        if upper_name.startswith("CAP_"):
+        if (
+            upper_name.startswith("CAP_")
+            and len(upper_name) > 4
+            and upper_name[4] in string.ascii_uppercase
+        ):
             try:
                 return cast(Cap, getattr(cls, upper_name[4:]))
             except AttributeError:
