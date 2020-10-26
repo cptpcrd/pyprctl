@@ -24,6 +24,7 @@ from .caps import (
 )
 from .ffi import sys_exit as _sys_exit
 from .file_caps import FileCaps
+from .fsid import getfsgid, getfsuid, setfsgid, setfsuid
 from .misc import (
     MCEKillPolicy,
     TimingMethod,
@@ -71,6 +72,10 @@ __all__ = (
     "cap_effective",
     "cap_ambient",
     "securebits",
+    "getfsuid",
+    "getfsgid",
+    "setfsuid",
+    "setfsgid",
     "FileCaps",
     "MCEKillPolicy",
     "TimingMethod",
