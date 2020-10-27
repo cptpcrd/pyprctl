@@ -7,13 +7,39 @@ from . import ffi
 
 
 class MCEKillPolicy(enum.Enum):
+    """
+    An enum representing the possible machine check memory corruption kill policies, for use with
+    ``get_mce_kill()`` and ``set_mce_kill()``.
+
+    Essentially, this determines when a thread will be sent a SIGBUS signal if memory corruption is
+    detected. See ``PR_MCE_KILL`` in prctl(2) and ``/proc/sys/vm/memory_failure_early_kill`` in
+    proc(5) for more information.
+    """
+
+    #: "Early kill" -> As soon as irrecoverable corruption is detected, kill this thread if it has
+    #: the corrupted page mapped.
     EARLY = ffi.PR_MCE_KILL_EARLY
+    #: "Late kill" -> If irrecoverable corruption is detected, only kill this thread if it tries to
+    #: access the corrupted page.
     LATE = ffi.PR_MCE_KILL_LATE
+    #: When irrecoverable corruption is detected, follow the system-wide default action as specified
+    #: by the contents of ``/proc/sys/vm/memory_failure_early_kill`` (see proc(5) for more
+    #: information).
     DEFAULT = ffi.PR_MCE_KILL_DEFAULT
 
 
 class TimingMethod(enum.Enum):
+    """
+    An enum representing the possible process timing methods, for use with ``get_timing()`` and
+    ``set_timing()``.
+
+    See ``PR_SET_TIMING`` in prctl(2) for more details.
+    """
+
+    #: The traditional statistical process timing method.
     STATISTICAL = ffi.PR_TIMING_STATISTICAL
+    #: Accurate timestamp-based process timing (currently unimplemented; trying to select it will
+    #: raise an error).
     TIMESTAMP = ffi.PR_TIMING_TIMESTAMP
 
 
@@ -113,10 +139,19 @@ See ``set_keepcaps()``.
 
 
 def set_mce_kill(policy: MCEKillPolicy) -> None:
+    """
+    Set the machine check memory corruption kill policy for the current thread.
+
+    See ``MCEKillPolicy`` for more details.
+    """
     ffi.prctl(ffi.PR_MCE_KILL, ffi.PR_MCE_KILL_SET, policy.value, 0, 0)
 
 
 def get_mce_kill() -> MCEKillPolicy:
+    """
+    Get the machine check memory corruption kill policy for the current thread. See
+    ``set_mce_kill()``.
+    """
     return MCEKillPolicy(ffi.prctl(ffi.PR_MCE_KILL_GET, 0, 0, 0, 0))
 
 
@@ -220,12 +255,37 @@ def set_seccomp_mode_strict() -> None:
 
 
 set_timerslack = _make_integer_setter(ffi.PR_SET_TIMERSLACK)
+set_timerslack.__doc__ = """
+Set the current thread's timer slack value.
+
+The timer slack value is used by the kernel to "group" timer expirations that are close to each
+other. Essentially, it represents the maximum amount of time (in nanoseconds) by which timer
+expirations (``poll()``, ``select()``, ``nanosleep()``, etc.) might be delivered late.
+
+Each thread has a "current" timer slack value and a "default" timer slack value. This function
+manipulates the "current" value; the "default" value cannot be altered. Passing a value of 0
+will reset this thread's "current" value to its "default" value.
+
+See ``PR_SET_TIMERSLACK`` in prctl(2) for more details.
+"""
+
 get_timerslack = _make_res_integer_getter(ffi.PR_GET_TIMERSLACK)
+get_timerslack.__doc__ = """
+Get the current thread's timer slack value.
+
+See ``set_timerslack()``.
+"""
 
 
 def set_timing(timing: TimingMethod) -> None:
+    """
+    Set the process timing mode. Currently, only "statistical" process timing is implemented.
+    """
     ffi.prctl(ffi.PR_SET_TIMING, timing.value, 0, 0, 0)
 
 
 def get_timing() -> TimingMethod:
+    """
+    Get the current process timing mode.
+    """
     return TimingMethod(ffi.prctl(ffi.PR_GET_TIMING, 0, 0, 0, 0))
