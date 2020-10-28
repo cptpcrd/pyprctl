@@ -116,44 +116,36 @@ class FileCaps:
     def get_for_file(
         cls,
         path: Union[int, str, bytes, "os.PathLike[str]", "os.PathLike[bytes]"],
-        *,
-        follow_symlinks: bool = True,
     ) -> "FileCaps":
         """
-        Retrieves the file capabilities attached to the given file. ``path`` and ``follow_symlinks``
-        are as for ``os.getxattr()``.
+        Retrieves the file capabilities attached to the given file. ``path`` is as for
+        ``os.getxattr()``.
         """
 
-        return cls._from_data(
-            os.getxattr(path, ffi.XATTR_NAME_CAPS, follow_symlinks=follow_symlinks)
-        )
+        return cls._from_data(os.getxattr(path, ffi.XATTR_NAME_CAPS))
 
     def set_for_file(
         self,
         path: Union[int, str, bytes, "os.PathLike[str]", "os.PathLike[bytes]"],
-        *,
-        follow_symlinks: bool = True,
     ) -> None:
         """
         Sets the file capabilities attached to the given file to the state represented by this
-        object. ``path`` and ``follow_symlinks`` are as for ``os.setxattr()``.
+        object. ``path`` is as for ``os.setxattr()``.
         """
 
-        os.setxattr(path, ffi.XATTR_NAME_CAPS, self._into_data(), follow_symlinks=follow_symlinks)
+        os.setxattr(path, ffi.XATTR_NAME_CAPS, self._into_data())
 
     @classmethod
     def remove_for_file(
         cls,
         path: Union[int, str, bytes, "os.PathLike[str]", "os.PathLike[bytes]"],
-        *,
-        follow_symlinks: bool = True,
     ) -> None:
         """
-        Removes the file capabilities attached to the given file. ``path`` and ``follow_symlinks``
-        are as for ``os.removexattr()``.
+        Removes the file capabilities attached to the given file. ``path`` is as for
+        ``os.removexattr()``.
         """
 
-        os.removexattr(path, ffi.XATTR_NAME_CAPS, follow_symlinks=follow_symlinks)
+        os.removexattr(path, ffi.XATTR_NAME_CAPS)
 
     @classmethod
     def from_text(cls, text: str) -> "FileCaps":
