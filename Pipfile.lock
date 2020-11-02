@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "abc7ee1945ba7ef734a994d230c4ebdbdde9496c1847cf8755efa37f280953dc"
+            "sha256": "b897cf0c223e9a91659678ac3290240225c440f4a910255b37a94fecccd366ce"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -329,7 +329,6 @@
                 "sha256:d9aedd3b6a6fc2f6f5316492b282f60d7c7b118a15c99b5a93d3bcba326c3125"
             ],
             "index": "pypi",
-            "markers": "platform_system != 'FreeBSD'",
             "version": "==2020.10.8"
         },
         "pyyaml": {
