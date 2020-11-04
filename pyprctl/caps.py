@@ -121,7 +121,25 @@ class Cap(enum.Enum):
         """
         Returns the set of capabilities supported by the running kernel.
         """
-        return {cap for cap in cls if cap.is_supported()}
+
+        # Do a binary search
+
+        low = 0
+        high = _LAST_CAP.value
+
+        while low != high:
+            # This basically does `mid = ceil((low + high) / 2)`.
+            # If we don't do ceiling division, the way binary search works, we'll get stuck at
+            # `high = low + 1` forever.
+            total = low + high
+            mid = (total >> 1) + (total & 1)
+
+            if cls(mid).is_supported():
+                low = mid
+            else:
+                high = mid - 1
+
+        return {cls(i) for i in range(low + 1)}
 
 
 _LAST_CAP = max(Cap, key=lambda cap: cap.value)  # type: ignore
