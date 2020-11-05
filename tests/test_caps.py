@@ -38,6 +38,10 @@ def test_supported_caps() -> None:
         assert pyprctl.capbset_read(cap) is not None
         assert pyprctl.cap_ambient_is_set(cap) is not None
 
+    for cap in set(pyprctl.Cap) - supported_caps:
+        assert pyprctl.capbset_read(cap) is None
+        assert pyprctl.cap_ambient_is_set(cap) is None
+
     capstates = [pyprctl.CapState.get_current(), pyprctl.CapState.get_for_pid(0)]
 
     for cap in set(pyprctl.Cap) - supported_caps:
