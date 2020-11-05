@@ -162,7 +162,6 @@ def set_no_new_privs() -> None:
     Once this flag is set, it cannot be unset. This flag guarantees that in this thread and in all
     of its children, no ``exec()`` call can ever result in elevated privileges. See prctl(2) for
     more information.
-
     """
     ffi.prctl(ffi.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)
 
@@ -181,7 +180,6 @@ def set_name(name: Union[str, bytes]) -> None:
 
     The name is silently truncated to the first 16 bytes. This includes the trailing NUL, so only
     the first 15 characters of the given ``name`` will be used.
-
     """
 
     if not isinstance(name, bytes):
@@ -248,7 +246,6 @@ def set_seccomp_mode_strict() -> None:
     Note: ``sys.exit()`` and ``os._exit()`` will call the ``exit_group()`` syscall, not ``_exit()``.
     ``pyprctl`` exposes a function :py:func:`_sys_exit()` that calls the ``_exit()`` syscall
     directly.
-
     """
 
     ffi.prctl(ffi.PR_SET_SECCOMP, ffi.SECCOMP_MODE_STRICT, 0, 0, 0)

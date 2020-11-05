@@ -93,7 +93,6 @@ class Cap(enum.Enum):
         Roughly equivalent to ``cap_from_name()`` in libcap. Names are matched case-insensitively,
         but they must include a ``cap_`` prefix (also case-insensitive; ``CAP_`` and ``Cap_`` are
         valid too).
-
         """
 
         upper_name = name.upper()
@@ -989,7 +988,6 @@ def scoped_effective_caps(effective: Iterable[Cap]) -> Iterator[None]:
         ambient, and bounding) in the body of the context manager *will* be preserved. (Be careful
         not to remove any of the capabilities present in the original effective set from the
         permitted set, or this function may fail to revert to the original effective set.)
-
     """
 
     effective = set(effective)
