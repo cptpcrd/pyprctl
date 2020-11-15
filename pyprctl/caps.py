@@ -251,11 +251,16 @@ class _CapabilitySet:
         else:
             self.drop(*(_ALL_CAPS_SET - set(limit_caps)))
 
+            self._clear_extra()
+
     def clear(self) -> None:
         if self._name == "ambient":
             cap_ambient_clear_all()
         else:
             self.drop(*Cap)
+
+            if self._name == "bounding":
+                self._clear_extra()
 
     def replace(self, *caps: Cap) -> None:
         if not caps:
@@ -272,6 +277,8 @@ class _CapabilitySet:
                 elif is_raised and not want_raised:
                     capbset_drop(cap)
 
+            self._clear_extra()
+
         elif self._name == "ambient":
             for cap in Cap:
                 is_raised = cap_ambient_is_set(cap)
@@ -282,10 +289,22 @@ class _CapabilitySet:
                 elif is_raised and not want_raised:
                     cap_ambient_lower(cap)
 
+            self._clear_extra()
+
         else:
             state = CapState.get_current()
             setattr(state, self._name, caps)
             state.set_current()
+
+    def _clear_extra(self) -> None:
+        if self._name == "bounding":
+            for i in range(_LAST_CAP.value + 1, _LAST_KERNEL_CAP + 1):
+                if ffi.prctl(ffi.PR_CAPBSET_READ, i, 0, 0, 0):
+                    ffi.prctl(ffi.PR_CAPBSET_DROP, i, 0, 0, 0)
+
+        elif self._name == "ambient":
+            for i in range(_LAST_CAP.value + 1, _LAST_KERNEL_CAP + 1):
+                ffi.prctl(ffi.PR_CAP_AMBIENT_LOWER, i, 0, 0, 0)
 
     def __repr__(self) -> str:
         return "<{} capability set: {}>".format(self._name.title(), self)
@@ -1010,3 +1029,29 @@ def scoped_effective_caps(effective: Iterable[Cap]) -> Iterator[None]:
         capstate = CapState.get_current()
         capstate.effective = orig_effective
         capstate.set_current()
+
+
+# This is only set to anything other than `_LAST_CAP.value` if the kernel supports capabilities that
+# this library does not (in which case it is set to the number of the final capability supported by
+# the kernel).
+#
+# This is then used to clear the "extra" capabilities not supported by the kernel when certain
+# operations are performed with the high-level APIs.
+_LAST_KERNEL_CAP = _LAST_CAP.value
+
+while True:
+    try:
+        ffi.prctl(ffi.PR_CAPBSET_READ, _LAST_KERNEL_CAP + 1, 0, 0, 0)
+    except OSError as ex:
+        assert ex.errno == errno.EINVAL
+        break
+    else:
+        _LAST_KERNEL_CAP += 1
+
+if _LAST_KERNEL_CAP > _LAST_CAP.value:
+    warnings.warn(
+        "Unrecognized capabilities (numbers {} to {}) detected. This may result in strange and "
+        "possibly dangerous behavior. Are you using an old version of pyprctl on a newer "
+        "kernel?".format(_LAST_CAP.value + 1, _LAST_KERNEL_CAP),
+        RuntimeWarning,
+    )
