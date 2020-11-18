@@ -124,7 +124,9 @@ class Cap(enum.Enum):
 
         # Do a binary search
 
-        low = 0
+        # CAP_MAC_ADMIN was added in kernel 2.6.25, so this will give us support for everything
+        # since then (if supported by the libc)
+        low = Cap.MAC_ADMIN.value
         high = _LAST_CAP.value
 
         while low != high:
