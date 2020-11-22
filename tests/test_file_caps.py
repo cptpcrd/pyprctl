@@ -1,4 +1,8 @@
 # pylint: disable=protected-access
+import errno
+import os
+import shutil
+
 import pytest
 
 import pyprctl
@@ -91,3 +95,58 @@ def test_filecaps_copy() -> None:
         ),
     ]:
         assert fcaps.copy() == fcaps
+
+
+def test_filecaps_get_newuidmap() -> None:
+    newuidmap_exe = shutil.which("newuidmap")
+
+    if newuidmap_exe is None:
+        pytest.skip("'newuidmap' is not installed")
+
+    newuidmap_exe = os.path.realpath(newuidmap_exe)
+
+    fcaps = pyprctl.FileCaps.get_for_file(newuidmap_exe)
+
+    with open(newuidmap_exe) as file:
+        assert pyprctl.FileCaps.get_for_file(file.fileno()) == fcaps
+
+    assert fcaps == pyprctl.FileCaps(
+        effective=True, permitted={pyprctl.Cap.SETUID}, inheritable=set()
+    )
+
+
+def test_filecaps_get_ping() -> None:
+    ping_exe = shutil.which("ping")
+
+    if ping_exe is None:
+        pytest.skip("'ping' is not installed")
+
+    ping_exe = os.path.realpath(ping_exe)
+
+    try:
+        fcaps = pyprctl.FileCaps.get_for_file(ping_exe)
+    except OSError as ex:
+        if ex.errno == errno.ENODATA:
+            pytest.skip("{} does not have file capabilities attached".format(ping_exe))
+        else:
+            raise
+
+    assert fcaps == pyprctl.FileCaps(
+        effective=True, permitted={pyprctl.Cap.NET_RAW}, inheritable=set()
+    )
+
+
+def test_filecaps_error() -> None:
+    with pytest.raises(FileNotFoundError):
+        pyprctl.FileCaps.get_for_file("/NOEXIST")
+
+    with pytest.raises(OSError, match="No data"):
+        pyprctl.FileCaps.get_for_file(os.path.realpath("/bin/sh"))
+
+    with pytest.raises(FileNotFoundError):
+        pyprctl.FileCaps(effective=False, permitted=set(), inheritable=set()).set_for_file(
+            "/NOEXIST"
+        )
+
+    with pytest.raises(FileNotFoundError):
+        pyprctl.FileCaps.remove_for_file("/NOEXIST")
