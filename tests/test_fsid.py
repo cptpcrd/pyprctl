@@ -25,3 +25,31 @@ def test_setfsid_same() -> None:
     # This is a no-op
     pyprctl.setfsuid(os.geteuid())
     pyprctl.setfsgid(os.getegid())
+
+
+def test_setfsuid_failure() -> None:
+    bad_uid = max(os.getresuid()) + 1
+
+    orig_state = False
+    if pyprctl.cap_effective.setuid:
+        pyprctl.cap_effective.setuid = False
+        orig_state = True
+
+    with pytest.raises(PermissionError):
+        pyprctl.setfsuid(bad_uid)
+
+    pyprctl.cap_effective.setuid = orig_state
+
+
+def test_setfsgid_failure() -> None:
+    bad_gid = max(os.getresgid()) + 1
+
+    orig_state = False
+    if pyprctl.cap_effective.setgid:
+        pyprctl.cap_effective.setgid = False
+        orig_state = True
+
+    with pytest.raises(PermissionError):
+        pyprctl.setfsgid(bad_gid)
+
+    pyprctl.cap_effective.setgid = orig_state
