@@ -2,7 +2,6 @@ import os
 import signal
 import subprocess
 import sys
-from typing import Any, Callable
 
 import pytest
 
@@ -78,33 +77,6 @@ def test_timing_toggle() -> None:
 
     with pytest.raises(OSError, match="Invalid argument"):
         pyprctl.set_timing(pyprctl.TimingMethod.TIMESTAMP)
-
-
-def test_seccomp_mode_strict() -> None:
-    if hasattr(sys, "pypy_version_info"):
-        pytest.skip("Fails on PyPy for unknown reasons")
-
-    def do_test(callback: Callable[[], Any], res: int) -> None:
-        pid = os.fork()
-        if pid == 0:
-            pyprctl.set_seccomp_mode_strict()
-            callback()
-            pyprctl._sys_exit(0)  # pylint: disable=protected-access
-
-        _, wstatus = os.waitpid(pid, 0)
-        assert res == (
-            -os.WTERMSIG(wstatus) if os.WIFSIGNALED(wstatus) else os.WEXITSTATUS(wstatus)
-        )
-
-    # Sanity check
-    do_test(lambda: None, 0)
-
-    # We can read() and write() data
-    r_fd, w_fd = os.pipe()
-    do_test(lambda: [os.write(w_fd, b"a"), os.read(r_fd, 1)], 0)
-
-    # But nothing else
-    do_test(os.getpid, -signal.SIGKILL)
 
 
 @restore_old_value(pyprctl.get_child_subreaper, pyprctl.set_child_subreaper)
