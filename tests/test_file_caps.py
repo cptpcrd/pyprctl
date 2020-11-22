@@ -2,6 +2,7 @@
 import errno
 import os
 import shutil
+import stat
 
 import pytest
 
@@ -104,6 +105,9 @@ def test_filecaps_get_newuidmap() -> None:
         pytest.skip("'newuidmap' is not installed")
 
     newuidmap_exe = os.path.realpath(newuidmap_exe)
+
+    if os.stat(newuidmap_exe).st_mode & stat.S_ISUID:
+        pytest.skip("{} is a set-UID executable".format(newuidmap_exe))
 
     fcaps = pyprctl.FileCaps.get_for_file(newuidmap_exe)
 
