@@ -1,6 +1,8 @@
 import errno
 import os
 
+import pytest
+
 import pyprctl
 
 
@@ -41,3 +43,15 @@ def test_setresid_same() -> None:
 
     pyprctl.ffi.sys_setresgid(-1, -1, -1)
     pyprctl.ffi.sys_setresgid(gid, gid, gid)
+
+
+def test_setgroups_error() -> None:
+    orig_state = False
+    if pyprctl.cap_effective.setgid:
+        pyprctl.cap_effective.setgid = False
+        orig_state = True
+
+    with pytest.raises(PermissionError):
+        pyprctl.ffi.sys_setgroups([])
+
+    pyprctl.cap_effective.setgid = orig_state
