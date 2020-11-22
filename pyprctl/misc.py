@@ -73,15 +73,6 @@ def _make_integer_setter(option: int) -> Callable[[int], None]:
     return func
 
 
-def _make_ptr_integer_getter(option: int) -> Callable[[], int]:
-    def func() -> int:
-        flag = ctypes.c_int()
-        ffi.prctl(option, flag, 0, 0, 0)
-        return flag.value
-
-    return func
-
-
 def _make_res_integer_getter(option: int) -> Callable[[], int]:
     def func() -> int:
         return ffi.prctl(option, 0, 0, 0, 0)
