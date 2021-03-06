@@ -144,7 +144,7 @@ class Cap(enum.Enum):
         return {cls(i) for i in range(low + 1)}
 
 
-_LAST_CAP = max(Cap, key=lambda cap: cap.value)  # type: ignore
+_LAST_CAP = max(Cap, key=lambda cap: cap.value)
 _ALL_CAPS_SET = set(Cap)
 
 
@@ -313,8 +313,7 @@ class _CapabilitySet:
 
     def __str__(self) -> str:
         return "=" + ",".join(
-            "cap_" + cap.name.lower()
-            for cap in sorted(self.probe(), key=lambda cap: cap.value)  # type: ignore
+            "cap_" + cap.name.lower() for cap in sorted(self.probe(), key=lambda cap: cap.value)
         )
 
 
@@ -561,8 +560,7 @@ def _capstate_to_text(*, effective: Set[Cap], inheritable: Set[Cap], permitted: 
             return "" if prefix_ch == "=" else "all"
 
         return ",".join(
-            "cap_" + cap.name.lower()
-            for cap in sorted(caps, key=lambda cap: cap.value)  # type: ignore
+            "cap_" + cap.name.lower() for cap in sorted(caps, key=lambda cap: cap.value)
         )
 
     orig_effective = effective
