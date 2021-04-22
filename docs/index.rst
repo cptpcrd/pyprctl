@@ -18,7 +18,7 @@ To try to mitigate this, glibc and musl make clever use of realtime signals to s
 
 ``pyprctl``, however, makes **no attempt** to synchronize any changes it makes to a thread's UIDs/GIDs/capabilities. In fact, when changing UIDs/GIDs it deliberately works around glibc/musl's UID/GID synchronization. If you use ``pyprctl``'s capability manipulation functions in multithreaded programs, you are responsible for synchronizing any changes across threads (if this is necessary to properly secure your application).
 
-(Note: ``python-prctl`` doesn't link against libpsx, so it behaves the same way! It just doesn't document this.)
+(Note: ``python-prctl`` doesn't link against libpsx, so it behaves largely the same way! It just doesn't document this.)
 
 Platform support
 ================
