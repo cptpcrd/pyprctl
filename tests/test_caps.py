@@ -94,17 +94,16 @@ def test_capstate_pid_1() -> None:
 
 
 def test_capstate_dead_proc() -> None:
-    proc = subprocess.Popen(
+    with subprocess.Popen(
         [sys.executable, "-c", ""],
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
-    )
+    ) as proc:
+        assert proc.wait() == 0
 
-    assert proc.wait() == 0
-
-    with pytest.raises(ProcessLookupError):
-        pyprctl.CapState.get_for_pid(proc.pid)
+        with pytest.raises(ProcessLookupError):
+            pyprctl.CapState.get_for_pid(proc.pid)
 
 
 def test_capabilityset() -> None:
