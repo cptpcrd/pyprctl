@@ -4,6 +4,7 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [packages]
+dataclasses = {version = "==0.8", markers = "python_version < '3.7'"}
 
 [dev-packages]
 flake8 = "~=3.9.2"
