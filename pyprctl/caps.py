@@ -1042,8 +1042,8 @@ _LAST_KERNEL_CAP = _LAST_CAP.value
 while True:
     try:
         ffi.prctl(ffi.PR_CAPBSET_READ, _LAST_KERNEL_CAP + 1, 0, 0, 0)
-    except OSError as ex:
-        assert ex.errno == errno.EINVAL
+    except OSError as _ex:
+        assert _ex.errno == errno.EINVAL
         break
     else:
         _LAST_KERNEL_CAP += 1
