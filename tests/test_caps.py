@@ -150,6 +150,10 @@ def test_capset_from_bitmask() -> None:
             pyprctl.caps._capset_from_bitmask(1 << 64) == set()  # pylint: disable=protected-access
         )
 
+    with pytest.warns(RuntimeWarning, match=r"^Unrecognized capability"):
+        # pylint: disable=protected-access
+        assert pyprctl.caps._capset_from_bitmask(1 << (pyprctl.caps._LAST_CAP.value + 1)) == set()
+
 
 def test_capset_to_bitmask() -> None:
     assert (
