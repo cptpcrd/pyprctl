@@ -4,6 +4,7 @@ import os
 import sys
 from typing import Collection, Union, cast
 
+uid_t = ctypes.c_uint32  # pylint: disable=invalid-name
 gid_t = ctypes.c_uint32  # pylint: disable=invalid-name
 
 _libc_path = ctypes.util.find_library("c")
@@ -111,18 +112,18 @@ else:
 
 
 def sys_setresuid(ruid: int, euid: int, suid: int) -> None:
-    if libc.syscall(_SYS_SETRESUID, ruid, euid, suid) < 0:
+    if libc.syscall(_SYS_SETRESUID, uid_t(ruid), uid_t(euid), uid_t(suid)) < 0:
         raise build_oserror(ctypes.get_errno())
 
 
 def sys_setresgid(rgid: int, egid: int, sgid: int) -> None:
-    if libc.syscall(_SYS_SETRESGID, rgid, egid, sgid) < 0:
+    if libc.syscall(_SYS_SETRESGID, gid_t(rgid), gid_t(egid), gid_t(sgid)) < 0:
         raise build_oserror(ctypes.get_errno())
 
 
 def sys_setgroups(groups: Collection[int]) -> None:
     c_groups = (gid_t * len(groups))(*groups)  # pytype: disable=not-callable
-    if libc.syscall(_SYS_SETGROUPS, len(groups), c_groups) < 0:
+    if libc.syscall(_SYS_SETGROUPS, ctypes.c_size_t(len(groups)), c_groups) < 0:
         raise build_oserror(ctypes.get_errno())
 
 
