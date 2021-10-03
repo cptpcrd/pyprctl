@@ -108,7 +108,7 @@ class Cap(enum.Enum):
             except AttributeError:
                 pass
 
-        raise ValueError("Unknown capability {!r}".format(name))
+        raise ValueError(f"Unknown capability {name!r}")
 
     def is_supported(self) -> bool:
         """
@@ -309,7 +309,7 @@ class _CapabilitySet:
                 ffi.prctl(ffi.PR_CAP_AMBIENT_LOWER, i, 0, 0, 0)
 
     def __repr__(self) -> str:
-        return "<{} capability set: {}>".format(self._name.title(), self)
+        return f"<{self._name.title()} capability set: {self}>"
 
     def __str__(self) -> str:
         return "=" + ",".join(
@@ -454,9 +454,9 @@ def _capset_from_bitmask(bitmask: int) -> Set[Cap]:
                 res.add(Cap(i))
             else:
                 warnings.warn(
-                    "Unrecognized capability (number {}) found in capability set. This may result "
-                    "in strange behavior. Are you using an old version of pyprctl on a newer "
-                    "kernel?".format(i),
+                    f"Unrecognized capability (number {i}) found in capability set. This may "
+                    "result in strange behavior. Are you using an old version of pyprctl on a "
+                    "newer kernel?",
                     RuntimeWarning,
                 )
 
@@ -544,7 +544,7 @@ def _capstate_from_text(text: str) -> Tuple[Set[Cap], Set[Cap], Set[Cap]]:
                     permitted.difference_update(caps)
 
             else:
-                raise ValueError("Invalid character {!r} in capability set clause".format(ch))
+                raise ValueError(f"Invalid character {ch!r} in capability set clause")
 
             last_ch = ch
 
@@ -772,13 +772,13 @@ class _SecurebitsAccessor:  # pylint: disable=too-few-public-methods
     }
 
     def __repr__(self) -> str:
-        return "<Securebits: {}>".format(self)
+        return f"<Securebits: {self}>"
 
     def __str__(self) -> str:
         cur_secbits = get_securebits()
 
         return ", ".join(
-            "secure-{}: {} ({})".format(
+            "secure-{}: {} ({})".format(  # pylint: disable=consider-using-f-string
                 secbit.name.lower().replace("_", "-"),
                 "yes" if secbit in cur_secbits else "no",
                 "locked" if lock_secbit in cur_secbits else "unlocked",
@@ -927,10 +927,10 @@ def cap_set_ids(
     # We do type checks up front to avoid errors in the middle of changing the UIDs/GIDs.
 
     if uid is not None and not isinstance(uid, int):
-        raise TypeError("Invalid type {!r} for 'uid' argument".format(uid.__class__.__name__))
+        raise TypeError(f"Invalid type {uid.__class__.__name__!r} for 'uid' argument")
 
     if gid is not None and not isinstance(gid, int):
-        raise TypeError("Invalid type {!r} for 'gid' argument".format(gid.__class__.__name__))
+        raise TypeError(f"Invalid type {gid.__class__.__name__!r} for 'gid' argument")
 
     if groups is not None:
         groups = list(groups)
@@ -938,9 +938,7 @@ def cap_set_ids(
         for supp_gid in groups:
             if not isinstance(supp_gid, int):
                 raise TypeError(
-                    "Invalid type {!r} for value in 'groups' list".format(
-                        supp_gid.__class__.__name__
-                    )
+                    f"Invalid type {supp_gid.__class__.__name__!r} for value in 'groups' list"
                 )
 
     if uid is None and gid is None and groups is None:
@@ -1050,8 +1048,8 @@ while True:
 
 if _LAST_KERNEL_CAP > _LAST_CAP.value:
     warnings.warn(
-        "Unrecognized capabilities (numbers {} to {}) detected. This may result in strange and "
-        "possibly dangerous behavior. Are you using an old version of pyprctl on a newer "
-        "kernel?".format(_LAST_CAP.value + 1, _LAST_KERNEL_CAP),
+        f"Unrecognized capabilities (numbers {_LAST_CAP.value + 1} to {_LAST_KERNEL_CAP}) detected."
+        " This may result in strange and possibly dangerous behavior. Are you using an old version "
+        "of pyprctl on a newer kernel?",
         RuntimeWarning,
     )

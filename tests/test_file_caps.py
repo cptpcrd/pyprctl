@@ -107,11 +107,11 @@ def test_filecaps_get_newuidmap() -> None:
     newuidmap_exe = os.path.realpath(newuidmap_exe)
 
     if os.stat(newuidmap_exe).st_mode & stat.S_ISUID:
-        pytest.skip("{} is a set-UID executable".format(newuidmap_exe))
+        pytest.skip(f"{newuidmap_exe} is a set-UID executable")
 
     fcaps = pyprctl.FileCaps.get_for_file(newuidmap_exe)
 
-    with open(newuidmap_exe) as file:
+    with open(newuidmap_exe, "rb") as file:
         assert pyprctl.FileCaps.get_for_file(file.fileno()) == fcaps
 
     assert fcaps == pyprctl.FileCaps(
@@ -131,7 +131,7 @@ def test_filecaps_get_ping() -> None:
         fcaps = pyprctl.FileCaps.get_for_file(ping_exe)
     except OSError as ex:
         if ex.errno == errno.ENODATA:
-            pytest.skip("{} does not have file capabilities attached".format(ping_exe))
+            pytest.skip(f"{ping_exe} does not have file capabilities attached")
         else:
             raise
 

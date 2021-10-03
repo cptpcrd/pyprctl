@@ -49,12 +49,12 @@ def test_timerslack_toggle() -> None:
     # 0 means the "default" value
     timerslack = pyprctl.get_timerslack()
     assert timerslack != 0
-    with open("/proc/self/timerslack_ns") as file:
+    with open("/proc/self/timerslack_ns", encoding="utf8") as file:
         assert int(file.readline().strip()) == timerslack
 
     pyprctl.set_timerslack(50)
     assert pyprctl.get_timerslack() == 50
-    with open("/proc/self/timerslack_ns") as file:
+    with open("/proc/self/timerslack_ns", encoding="utf8") as file:
         assert int(file.readline().strip()) == 50
 
 

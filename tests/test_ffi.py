@@ -7,29 +7,35 @@ import pyprctl
 
 
 def test_build_oserror() -> None:
-    assert str(pyprctl.ffi.build_oserror(errno.EINVAL)) == "[Errno {}] Invalid argument".format(
-        errno.EINVAL
+    assert (
+        str(pyprctl.ffi.build_oserror(errno.EINVAL)) == f"[Errno {errno.EINVAL}] Invalid argument"
     )
-    assert str(
-        pyprctl.ffi.build_oserror(errno.EINVAL, None)
-    ) == "[Errno {}] Invalid argument".format(errno.EINVAL)
-    assert str(
-        pyprctl.ffi.build_oserror(errno.EINVAL, None, None)
-    ) == "[Errno {}] Invalid argument".format(errno.EINVAL)
+    assert (
+        str(pyprctl.ffi.build_oserror(errno.EINVAL, None))
+        == f"[Errno {errno.EINVAL}] Invalid argument"
+    )
+    assert (
+        str(pyprctl.ffi.build_oserror(errno.EINVAL, None, None))
+        == f"[Errno {errno.EINVAL}] Invalid argument"
+    )
 
-    assert str(
-        pyprctl.ffi.build_oserror(errno.EINVAL, "")
-    ) == "[Errno {}] Invalid argument: ''".format(errno.EINVAL)
-    assert str(
-        pyprctl.ffi.build_oserror(errno.EINVAL, "a")
-    ) == "[Errno {}] Invalid argument: 'a'".format(errno.EINVAL)
+    assert (
+        str(pyprctl.ffi.build_oserror(errno.EINVAL, ""))
+        == f"[Errno {errno.EINVAL}] Invalid argument: ''"
+    )
+    assert (
+        str(pyprctl.ffi.build_oserror(errno.EINVAL, "a"))
+        == f"[Errno {errno.EINVAL}] Invalid argument: 'a'"
+    )
 
-    assert str(
-        pyprctl.ffi.build_oserror(errno.EINVAL, "", "")
-    ) == "[Errno {}] Invalid argument: '' -> ''".format(errno.EINVAL)
-    assert str(
-        pyprctl.ffi.build_oserror(errno.EINVAL, "a", "b")
-    ) == "[Errno {}] Invalid argument: 'a' -> 'b'".format(errno.EINVAL)
+    assert (
+        str(pyprctl.ffi.build_oserror(errno.EINVAL, "", ""))
+        == f"[Errno {errno.EINVAL}] Invalid argument: '' -> ''"
+    )
+    assert (
+        str(pyprctl.ffi.build_oserror(errno.EINVAL, "a", "b"))
+        == f"[Errno {errno.EINVAL}] Invalid argument: 'a' -> 'b'"
+    )
 
 
 def test_setresid_same() -> None:
