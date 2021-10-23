@@ -1,5 +1,6 @@
 import ctypes
 import enum
+import os
 import signal
 from typing import Callable, Union
 
