@@ -133,8 +133,7 @@ class Cap(enum.Enum):
             # This basically does `mid = ceil((low + high) / 2)`.
             # If we don't do ceiling division, the way binary search works, we'll get stuck at
             # `high = low + 1` forever.
-            total = low + high
-            mid = (total >> 1) + (total & 1)
+            mid = (low + high + 1) >> 1
 
             if cls(mid).is_supported():
                 low = mid
