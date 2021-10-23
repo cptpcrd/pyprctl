@@ -203,7 +203,7 @@ def set_pdeathsig(sig: Union[signal.Signals, int, None]) -> None:  # pylint: dis
 
     See prctl(2) for more details.
     """
-    ffi.prctl(ffi.PR_SET_PDEATHSIG, sig or 0, 0, 0, 0)
+    ffi.prctl(ffi.PR_SET_PDEATHSIG, int(sig or 0), 0, 0, 0)
 
 
 def get_pdeathsig() -> Union[signal.Signals, int, None]:  # pylint: disable=no-member
