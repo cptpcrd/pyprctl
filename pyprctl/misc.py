@@ -174,7 +174,7 @@ def set_name(name: Union[str, bytes]) -> None:
     """
 
     if not isinstance(name, bytes):
-        name = name.encode()
+        name = os.fsencode(name)
 
     raw_name = ctypes.create_string_buffer(name)
     ffi.prctl(ffi.PR_SET_NAME, raw_name, 0, 0, 0)  # type: ignore
@@ -185,7 +185,7 @@ def get_name() -> str:
 
     name = (ctypes.c_char * 16)()  # pytype: disable=not-callable
     ffi.prctl(ffi.PR_GET_NAME, name, 0, 0, 0)  # type: ignore
-    return name.value.decode()
+    return os.fsdecode(name.value)
 
 
 def set_pdeathsig(sig: Union[signal.Signals, int, None]) -> None:  # pylint: disable=no-member
