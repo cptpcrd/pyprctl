@@ -7,7 +7,7 @@ verify_ssl = true
 dataclasses = {version = "==0.8", markers = "python_version < '3.7'"}
 
 [dev-packages]
-flake8 = "~=3.9.2"
+flake8 = "~=4.0.1"
 pylint = "~=2.11.1"
 mypy = "~=0.910"
 
@@ -16,7 +16,7 @@ black = "==21.9b0"
 autopep8 = "~=1.5.7"
 
 pytest = "~=6.2.5"
-pytest-cov = "~=2.12.1"
+pytest-cov = "~=3.0.0"
 
 # Required by pytest, but not properly pulled in by Pipenv
 importlib-metadata = {version = ">=0.12", markers = "python_version < '3.8'"}
