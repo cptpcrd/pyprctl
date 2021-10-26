@@ -21,3 +21,5 @@ pytest-cov = "~=3.0.0"
 # Required by pytest, but not properly pulled in by Pipenv
 importlib-metadata = {version = ">=0.12", markers = "python_version < '3.8'"}
 zipp = {version = ">=0.5", markers = "python_version < '3.8'"}
+# Not properly pulled in either
+typing-extensions = ">=3.10.0"
